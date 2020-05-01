@@ -1,0 +1,27 @@
+version: '2'
+services:
+    api-db:
+        image: mysql:latest
+        environment:
+            - MYSQL_ROOT_PASSWORD=root
+            - MYSQL_DATABASE=billingapp
+            - MYSQL_USER=develuser
+            - MYSQL_PASSWORD=develpw
+            - MYSQL_ROOT_HOST=%
+        volumes:
+            - /billingapp/billingapp_db:/var/lib/mysql
+    go-client:
+        image: golang:alpine
+        links:
+            - "api-db:database"
+        entrypoint: ["billingapp_webserver"]
+        volumes:
+            - /billingapp/billingapp_webserver_executables:/usr/local/sbin
+            - /var/www/html:/var/www/html
+            - /billingapp/billingapp_logs:/root
+        environment:
+            - DB_BILLINGAPP_HOST=database
+            - DB_BILLINGAPP_USER=root
+            - DB_BILLINGAPP_PASSWORD=root
+        ports:
+            - "80:80"

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"loggerUtil"
 	"strconv"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -62,12 +63,23 @@ func Init(Host, Port, Username, Password, DBname string) (BillAppDB, error) {
 		loggerUtil.Debugln("Billing app DB Init Abort: end")
 		return bappdb, err
 	}
-	err = Billdb.Ping()
-	if err != nil {
-		loggerUtil.Log.Println("Error: DB not pingable: " + Host + Port + Username + Password + DBname + err.Error())
-		bappdb := BillAppDB{}
-		loggerUtil.Debugln("Billing app DB Init Ping Abort: end")
-		return bappdb, err
+	db_ping := false
+	for i := 0; i < 100; i++ {
+		err = Billdb.Ping()
+		if err != nil {
+			loggerUtil.Log.Println("Error: DB not pingable: " + Host + Port + Username + Password + DBname + err.Error())
+			loggerUtil.Debugln("Billing app DB Init Ping Abort: end")
+		} else {
+			db_ping = true
+			loggerUtil.Log.Println("SUCCESS: DB Ping : sleep interval: 100ms: trial count: ", i)
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+		loggerUtil.Log.Println("Error: DB Ping missed: checking after 100 ms: trial: ", i)
+	}
+	if db_ping == false {
+		loggerUtil.Log.Println("Error: Could not connect to DB for 10 seconds: Exit")
+		return BillAppDB{}, err
 	}
 	bappdb := BillAppDB{Billdb, Host, Port, Username, Password, DBname, "restaurant"}
 
