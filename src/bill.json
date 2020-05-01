@@ -1,0 +1,29 @@
+{
+    "Email": "saravana.k.r@gmail.com",
+    "RestaurantName": "Glaziers",
+    "UUID": "ABCD34B12BCDABCE",
+    "DishRows": [
+        {
+            "DishName": "Pongal",
+            "Price": 20,
+            "Tax": 3.3,
+            "TaxPercent": 0.15,
+            "Quantity": 2
+        },
+        {
+            "DishName": "Puri",
+            "Price": 10,
+            "Tax": 3.3,
+            "TaxPercent": 0.15,
+            "Quantity": 1
+        },
+        {
+            "DishName": "kesari bath",
+            "Price": 30,
+            "Tax": 3.4,
+            "TaxPercent": 0.25,
+            "Quantity": 4
+        }
+
+    ]
+}
