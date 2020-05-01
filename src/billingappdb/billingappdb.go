@@ -124,6 +124,10 @@ func (b *BillAppDB) Get(restrnt []byte) ([]byte, error) {
 		loggerUtil.Log.Println("Get: Get restaurant id Failed: ", err.Error())
 		return return_value, err
 	}
+	if restaurant_id == 0 {
+		loggerUtil.Log.Println("Error: Wrong Email or Restaurant Name")
+		return make([]byte, 0), errors.New("Wrong Value of Email and Restaurant Pair")
+	}
 	rstrnt_db_tables := get_restaurant_table_names(restaurant_id)
 	query_str := `SELECT * FROM ` + rstrnt_db_tables.orders +
 		` JOIN (SELECT uuid, MAX(order_id) as max_order_id FROM ` +
