@@ -5,8 +5,8 @@ services:
         environment:
             - MYSQL_ROOT_PASSWORD=root
             - MYSQL_DATABASE=billingapp
-            - MYSQL_USER=develuser
-            - MYSQL_PASSWORD=develpw
+            - MYSQL_USER=user1
+            - MYSQL_PASSWORD=pw1
             - MYSQL_ROOT_HOST=%
         volumes:
             - /billingapp/db:/var/lib/mysql
