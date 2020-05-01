@@ -110,14 +110,34 @@ func (b *BillAppDB) Close() error {
 	loggerUtil.Log.Println("SUCCESS: DB: CLOSED: ", b.Host)
 	return nil
 }
-
+func (b *BillAppDB) GetRestaurantList(email []byte) ([]byte, error) {
+	var restaurant_list []byte
+	var email_details Bill
+	err := json.Unmarshal(email, &email_details)
+	if err != nil {
+		loggerUtil.Log.Println("Error: UnMarshallig restaurant details", err.Error())
+		return restaurant_list, err
+	}
+	query_str := `SELECT name FROM restaurant WHERE email="` + email_details.Email + `"`
+	restaurant_list_map, err := b.getQueryJson(query_str)
+	if err != nil {
+		loggerUtil.Log.Println("Error: Obtaining restaurant list from email", err.Error())
+		return restaurant_list, err
+	}
+	restaurant_list, err = json.Marshal(restaurant_list_map)
+	if err != nil {
+		loggerUtil.Log.Println("Error: Converting restaurant list from map to byte array", err.Error())
+		return restaurant_list, err
+	}
+	return restaurant_list, err
+}
 func (b *BillAppDB) Get(restrnt []byte) ([]byte, error) {
 	var return_value []byte
 	var restaurant_details Bill
 	err := json.Unmarshal(restrnt, &restaurant_details)
 	if err != nil {
 		loggerUtil.Log.Println("Error: UnMarshallig restaurant details", err.Error())
-		return nil, err
+		return return_value, err
 	}
 	restaurant_id, err := b.get_restaurant_id(&restaurant_details)
 	if err != nil {
@@ -126,7 +146,7 @@ func (b *BillAppDB) Get(restrnt []byte) ([]byte, error) {
 	}
 	if restaurant_id == 0 {
 		loggerUtil.Log.Println("Error: Wrong Email or Restaurant Name")
-		return make([]byte, 0), errors.New("Wrong Value of Email and Restaurant Pair")
+		return return_value, nil
 	}
 	rstrnt_db_tables := get_restaurant_table_names(restaurant_id)
 	query_str := `SELECT * FROM ` + rstrnt_db_tables.orders +

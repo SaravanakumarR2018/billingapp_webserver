@@ -111,13 +111,27 @@ func Init(ip, port, fs_directory, directory_url, restaurant_url string, billdb *
 	flag.Parse()
 	fileServer := http.FileServer(FileSystem{http.Dir(*directory)})
 	http.Handle(directory_url, http.StripPrefix(strings.TrimRight(directory_url, directory_url), fileServer))
-	http.HandleFunc(restaurant_url, restaurant_handler)
+	orders_url := restaurant_url + `/orders`
+	http.HandleFunc(orders_url, orders_handler)
+	restaurantlist_url := restaurant_url + `/restaurantlist`
+	http.HandleFunc(restaurantlist_url, restaurantlist_handler)
+	loggerUtil.Debugln("Orders url and restaurant list url ", orders_url, restaurantlist_url)
+
 	fmt.Printf("Serving %s on HTTP port: %s\n", *directory, *new_port)
 	loggerUtil.Log.Printf("Serving %s on HTTP port: %s\n", *directory, *new_port)
 	log.Fatal(http.ListenAndServe(":"+*new_port, nil))
 }
 
-func restaurant_handler(w http.ResponseWriter, req *http.Request) {
+func restaurantlist_handler(w http.ResponseWriter, req *http.Request) {
+	if req.Method == http.MethodGet {
+		loggerUtil.Debugln("Processing GET method", req.URL.Path)
+		processRstrntListGETMethod(w, req)
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+}
+
+func orders_handler(w http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodPost {
 		loggerUtil.Debugln("Processing POST method", req.URL.Path)
 		processPOSTMethod(w, req)
@@ -162,6 +176,46 @@ func processPOSTMethod(w http.ResponseWriter, req *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	return
+}
+func processRstrntListGETMethod(w http.ResponseWriter, req *http.Request) {
+	loggerUtil.Debugln("Correct Request URL ", req.URL.Path)
+	content_type := req.Header.Get("Content-type")
+	if content_type != `application/json` {
+		loggerUtil.Log.Println("Wrong content type for the requested URL", req.URL.Path, content_type)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Wrong request Url and content type" + req.URL.Path + content_type))
+		return
+	}
+	var c_bill billingappdb.Bill
+
+	err := decodeJSONBody(w, req, &c_bill)
+	if err != nil {
+		var mr *malformedRequest
+		loggerUtil.Log.Println("Error: Email Malformed Request: ", err.Error())
+		if errors.As(err, &mr) {
+			http.Error(w, mr.msg, mr.status)
+		} else {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
+	}
+	email, err := json.Marshal(c_bill)
+	if err != nil {
+		loggerUtil.Log.Println("Error: Converting Request json from struct to byte array", err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	restaurant_list, err := http_current_server.billdb.GetRestaurantList(email)
+	if err != nil {
+		loggerUtil.Log.Println("Error: Converting Email to Restaurant List")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(restaurant_list)
+	return
+
 }
 func processGETMethod(w http.ResponseWriter, req *http.Request) {
 
