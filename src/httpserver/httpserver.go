@@ -179,33 +179,23 @@ func processPOSTMethod(w http.ResponseWriter, req *http.Request) {
 }
 func processRstrntListGETMethod(w http.ResponseWriter, req *http.Request) {
 	loggerUtil.Debugln("Correct Request URL ", req.URL.Path)
-	content_type := req.Header.Get("Content-type")
-	if content_type != `application/json` {
-		loggerUtil.Log.Println("Wrong content type for the requested URL", req.URL.Path, content_type)
+	email := req.Header.Get("Email")
+	var NO_EMAIL string
+	if email == NO_EMAIL {
+		loggerUtil.Log.Println("Email not present in header for the requested URL", req.URL.Path, email)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Wrong request Url and content type" + req.URL.Path + content_type))
 		return
 	}
 	var c_bill billingappdb.Bill
+	c_bill.Email = email
 
-	err := decodeJSONBody(w, req, &c_bill)
-	if err != nil {
-		var mr *malformedRequest
-		loggerUtil.Log.Println("Error: Email Malformed Request: ", err.Error())
-		if errors.As(err, &mr) {
-			http.Error(w, mr.msg, mr.status)
-		} else {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		}
-		return
-	}
-	email, err := json.Marshal(c_bill)
+	email_details, err := json.Marshal(c_bill)
 	if err != nil {
 		loggerUtil.Log.Println("Error: Converting Request json from struct to byte array", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	restaurant_list, err := http_current_server.billdb.GetRestaurantList(email)
+	restaurant_list, err := http_current_server.billdb.GetRestaurantList(email_details)
 	if err != nil {
 		loggerUtil.Log.Println("Error: Converting Email to Restaurant List")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -220,26 +210,26 @@ func processRstrntListGETMethod(w http.ResponseWriter, req *http.Request) {
 func processGETMethod(w http.ResponseWriter, req *http.Request) {
 
 	loggerUtil.Debugln("Correct Request URL ", req.URL.Path)
-	content_type := req.Header.Get("Content-type")
-	if content_type != `application/json` {
-		loggerUtil.Log.Println("Wrong content type for the requested URL", req.URL.Path, content_type)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Wrong request Url and content type" + req.URL.Path + content_type))
-		return
-	}
-	var c_bill billingappdb.Bill
 
-	err := decodeJSONBody(w, req, &c_bill)
-	if err != nil {
-		var mr *malformedRequest
-		loggerUtil.Log.Println("Error: Malformed Request: ", err.Error())
-		if errors.As(err, &mr) {
-			http.Error(w, mr.msg, mr.status)
-		} else {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		}
+	email := req.Header.Get("Email")
+	var NO_EMAIL string
+	if email == NO_EMAIL {
+		loggerUtil.Log.Println("Email not present in header for the requested URL", req.URL.Path, email)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	restaurant_name := req.Header.Get("RestaurantName")
+	var NO_RESTAURANTNAME string
+	if restaurant_name == NO_RESTAURANTNAME {
+		loggerUtil.Log.Println("RestaurantName not present in header for the requested URL", req.URL.Path, restaurant_name)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var c_bill billingappdb.Bill
+	c_bill.Email = email
+	c_bill.RestaurantName = restaurant_name
+
 	restaurant_details, err := json.Marshal(c_bill)
 	if err != nil {
 		loggerUtil.Log.Println("Error: Converting Request json from struct to byte array", err.Error())
