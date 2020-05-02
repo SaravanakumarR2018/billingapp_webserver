@@ -64,7 +64,7 @@ func Init(Host, Port, Username, Password, DBname string) (BillAppDB, error) {
 		return bappdb, err
 	}
 	db_ping := false
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1800; i++ {
 		err = Billdb.Ping()
 		if err != nil {
 			loggerUtil.Log.Println("Error: DB not pingable: " + Host + Port + Username + Password + DBname + err.Error())
