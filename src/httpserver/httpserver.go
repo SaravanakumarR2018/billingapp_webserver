@@ -122,15 +122,18 @@ func Init(ip, port, fs_directory, directory_url, restaurant_url string, billdb *
 	log.Fatal(http.ListenAndServe(":"+*new_port, nil))
 }
 
+
 func processOptionsMethod(w http.ResponseWriter, req *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+func add_CORS_headers(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "*")
-	w.WriteHeader(http.StatusOK)
 }
 
 func restaurantlist_handler(w http.ResponseWriter, req *http.Request) {
-
+	add_CORS_headers(w,req)
 	if req.Method == http.MethodOptions {
 		loggerUtil.Debugln("restaurantlist_handler: Processing OPTIONS method for CORS", req.URL.Path)
 		processOptionsMethod(w, req)
@@ -144,6 +147,7 @@ func restaurantlist_handler(w http.ResponseWriter, req *http.Request) {
 }
 
 func orders_handler(w http.ResponseWriter, req *http.Request) {
+	add_CORS_headers(w,req)
 	if req.Method == http.MethodOptions {
 		loggerUtil.Debugln("orders_handler: Processing OPTIONS method for CORS", req.URL.Path)
 		processOptionsMethod(w, req)
