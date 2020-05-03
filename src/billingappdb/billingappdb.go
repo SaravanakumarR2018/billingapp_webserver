@@ -177,7 +177,7 @@ func (b *BillAppDB) Insert(current_bill []byte) error {
 		loggerUtil.Log.Println("DB insert: Validate Failed")
 		return err
 	}
-	restaurant_id, err := b.get_id_and_update_restaurant_db_tables(&c_bill)
+	restaurant_id, err := b.Get_id_and_update_restaurant_db_tables(&c_bill)
 	if err != nil {
 		loggerUtil.Log.Println("Error: Getting table id", err.Error())
 		return err
@@ -314,7 +314,7 @@ func (b *BillAppDB) get_restaurant_id(restrnt_details *Bill) (uint, error) {
 	restaurant_id = uint(r_id)
 	return restaurant_id, nil
 }
-func (b *BillAppDB) get_id_and_update_restaurant_db_tables(c_bill *Bill) (uint, error) {
+func (b *BillAppDB) Get_id_and_update_restaurant_db_tables(c_bill *Bill) (uint, error) {
 	var restaurant_id uint
 	query_str := `SELECT id from ` + b.RestaurantTableName + ` WHERE email="` + c_bill.Email +
 		`" AND name="` + c_bill.RestaurantName + `"`

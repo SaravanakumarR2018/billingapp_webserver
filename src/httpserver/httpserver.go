@@ -115,13 +115,28 @@ func Init(ip, port, fs_directory, directory_url, restaurant_url string, billdb *
 	http.HandleFunc(orders_url, orders_handler)
 	restaurantlist_url := restaurant_url + `/restaurantlist`
 	http.HandleFunc(restaurantlist_url, restaurantlist_handler)
-	loggerUtil.Debugln("Orders url and restaurant list url ", orders_url, restaurantlist_url)
+	addnewrestaurant_url := restaurant_url + `/addnewrestaurant`
+	http.HandleFunc(addnewrestaurant_url, addnewrestaurant_handler)
+	loggerUtil.Debugln("Orders url, restaurant list url, add new restaurant url ", orders_url, restaurantlist_url, addnewrestaurant_url)
 
 	fmt.Printf("Serving %s on HTTP port: %s\n", *directory, *new_port)
 	loggerUtil.Log.Printf("Serving %s on HTTP port: %s\n", *directory, *new_port)
 	log.Fatal(http.ListenAndServe(":"+*new_port, nil))
 }
 
+func addnewrestaurant_handler(w http.ResponseWriter, req *http.Request) {
+	add_CORS_headers(w, req)
+	if req.Method == http.MethodOptions {
+		loggerUtil.Debugln("addnewrestaurant_handler: Processing OPTIONS method for CORS", req.URL.Path)
+		processOptionsMethod(w, req)
+	} else if req.Method == http.MethodPost {
+		loggerUtil.Debugln("addnewrestaurant_handler: Processing POST method", req.URL.Path)
+		processAddNewRestaurantMethod(w, req)
+	} else {
+		loggerUtil.Debugln("addnewrestaurant_handler: Bad Request", req.URL.Path, req.Method)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+}
 
 func processOptionsMethod(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusOK)
@@ -133,7 +148,7 @@ func add_CORS_headers(w http.ResponseWriter, req *http.Request) {
 }
 
 func restaurantlist_handler(w http.ResponseWriter, req *http.Request) {
-	add_CORS_headers(w,req)
+	add_CORS_headers(w, req)
 	if req.Method == http.MethodOptions {
 		loggerUtil.Debugln("restaurantlist_handler: Processing OPTIONS method for CORS", req.URL.Path)
 		processOptionsMethod(w, req)
@@ -147,7 +162,7 @@ func restaurantlist_handler(w http.ResponseWriter, req *http.Request) {
 }
 
 func orders_handler(w http.ResponseWriter, req *http.Request) {
-	add_CORS_headers(w,req)
+	add_CORS_headers(w, req)
 	if req.Method == http.MethodOptions {
 		loggerUtil.Debugln("orders_handler: Processing OPTIONS method for CORS", req.URL.Path)
 		processOptionsMethod(w, req)
@@ -162,7 +177,37 @@ func orders_handler(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 }
+func processAddNewRestaurantMethod(w http.ResponseWriter, req *http.Request) {
+	content_type := req.Header.Get("Content-type")
+	if content_type != `application/json` {
+		loggerUtil.Log.Println("Error: processAddNewRestaurantMethod: POST: The post operation should contain json data")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	var c_bill billingappdb.Bill
+	err := decodeJSONBody(w, req, &c_bill)
+	if err != nil {
+		var mr *malformedRequest
+		loggerUtil.Log.Println("Error: processAddNewRestaurantMethod: POST: Malformed Request: ", err.Error())
+		if errors.As(err, &mr) {
+			http.Error(w, mr.msg, mr.status)
+		} else {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
+	}
+	restaurant_id, err := http_current_server.billdb.Get_id_and_update_restaurant_db_tables(&c_bill)
+	if err != nil {
+		loggerUtil.Log.Println("Error: processAddNewRestaurantMethod: Cannot add new restaiurant", c_bill.Email,
+			c_bill.RestaurantName)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	loggerUtil.Debugln("Restaurant id " + string(restaurant_id) + " " + c_bill.Email + " " + c_bill.RestaurantName)
+	w.WriteHeader(http.StatusOK)
+	return
 
+}
 func processPOSTMethod(w http.ResponseWriter, req *http.Request) {
 	content_type := req.Header.Get("Content-type")
 	if content_type != `application/json` {
