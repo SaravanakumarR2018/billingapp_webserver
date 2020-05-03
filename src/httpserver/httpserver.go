@@ -27,7 +27,7 @@ func (mr *malformedRequest) Error() string {
 func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}) error {
 	if r.Header.Get("Content-Type") != "" {
 		value, _ := header.ParseValueAndParams(r.Header, "Content-Type")
-		if value != "application/json" {
+		if !strings.Contains(value, "application/json") {
 			msg := "Content-Type header is not application/json"
 			return &malformedRequest{status: http.StatusUnsupportedMediaType, msg: msg}
 		}
@@ -179,7 +179,7 @@ func orders_handler(w http.ResponseWriter, req *http.Request) {
 }
 func processAddNewRestaurantMethod(w http.ResponseWriter, req *http.Request) {
 	content_type := req.Header.Get("Content-type")
-	if content_type != `application/json` {
+	if !strings.Contains(content_type, `application/json`) {
 		loggerUtil.Log.Println("Error: processAddNewRestaurantMethod: POST: The post operation should contain json data")
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -210,7 +210,7 @@ func processAddNewRestaurantMethod(w http.ResponseWriter, req *http.Request) {
 }
 func processPOSTMethod(w http.ResponseWriter, req *http.Request) {
 	content_type := req.Header.Get("Content-type")
-	if content_type != `application/json` {
+	if !strings.Contains(content_type, `application/json`) {
 		loggerUtil.Log.Println("Error: POST: The post operation should contain json data")
 		w.WriteHeader(http.StatusBadRequest)
 		return
