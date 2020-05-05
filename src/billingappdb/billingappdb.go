@@ -17,6 +17,7 @@ type restaurant_db_tables struct {
 	dishes          string
 	orders          string
 	order_updations string
+	customer_table  string
 }
 type BillAppDB struct {
 	Billdb              *sql.DB
@@ -38,6 +39,8 @@ type Bill struct {
 	Email          string
 	RestaurantName string
 	UUID           string
+	CustomerName   string
+	TableName      string
 	DishRows       []DishEntry
 }
 
@@ -150,10 +153,16 @@ func (b *BillAppDB) Get(restrnt []byte) ([]byte, error) {
 		return return_value, nil
 	}
 	rstrnt_db_tables := get_restaurant_table_names(restaurant_id)
-	query_str := `SELECT order_id, dishes_id, Quantity,  dish_name, price, tax_percent, tax, max_order_id,
-	BIN_TO_UUID(uuid) as uuid FROM (SELECT * FROM ` + rstrnt_db_tables.orders +
-		` JOIN (SELECT uuid, MAX(order_id) as max_order_id FROM ` +
-		rstrnt_db_tables.order_updations + ` GROUP BY uuid ) t ON t.max_order_id = order_id) AS temp`
+	query_str := `SELECT order_id,  dishes_id, Quantity, dish_name, price,tax_percent, tax,
+	BIN_TO_UUID(CUST_TABLE.uuid) as uuid, customer_id, customer_name, table_name, timestamp FROM 
+	(SELECT * FROM ` + rstrnt_db_tables.orders + ` 
+	JOIN (SELECT OD.uuid as uuid, timestamp, order_id as max_order_id FROM (SELECT DISTINCT uuid, timestamp, order_id from ` + rstrnt_db_tables.order_updations + `) OD
+	INNER JOIN (SELECT uuid, MAX(order_id) as max_order_id FROM ` + rstrnt_db_tables.order_updations + ` GROUP BY uuid) calq
+	on calq.max_order_id = OD.order_id ) t
+	ON t.max_order_id = order_id) AS ORDER_TABLE 
+	JOIN (SELECT * FROM ` + rstrnt_db_tables.customer_table + `) as CUST_TABLE
+	WHERE ORDER_TABLE.uuid = CUST_TABLE.uuid`
+
 	json_map, err := b.getQueryJson(query_str)
 	if err != nil {
 		loggerUtil.Log.Println("Error: Querying the database for restaurant orders ", query_str, err.Error())
@@ -206,10 +215,45 @@ func (b *BillAppDB) Insert(current_bill []byte) error {
 func (b *BillAppDB) insert_curent_order_updations(c_bill *Bill, current_timestamp string, restaurant_id uint) (uint64, error) {
 	rt_db_tbls := get_restaurant_table_names(restaurant_id)
 
+	query_customer_exists_str := `SELECT * FROM ` + rt_db_tbls.customer_table + ` WHERE BIN_TO_UUID(uuid)="` + c_bill.UUID + `"`
+	json_arr, err := b.getQueryJson(query_customer_exists_str)
+	if err != nil {
+		loggerUtil.Log.Println("Error: quering from customer table ", query_customer_exists_str, err.Error())
+		return 0, err
+	}
+	if len(json_arr) == 0 {
+		loggerUtil.Log.Println("New Order with UUID " + c_bill.UUID)
+		//Insert a new element into customer table
+		insert_str := `INSERT INTO ` + rt_db_tbls.customer_table + ` (uuid, customer_name, table_name) 
+		VALUES(` + `UUID_TO_BIN("` + c_bill.UUID + `"), "` + c_bill.CustomerName + `", "` + c_bill.TableName + `")`
+		err := b.Exec(insert_str)
+		if err != nil {
+			loggerUtil.Log.Println("Error: inserting into Customer table ", insert_str, err.Error())
+			return 0, err
+		}
+	}
+	if len(json_arr) == 1 {
+		//Customer entry already exists look for updations
+		FIRST_ELEMENT := 0
+		saved_cust_name := json_arr[FIRST_ELEMENT]["customer_name"]
+		saved_table_name := json_arr[FIRST_ELEMENT]["table_name"]
+		cust_id := json_arr[FIRST_ELEMENT]["customer_id"]
+		if saved_cust_name != c_bill.CustomerName || saved_table_name != c_bill.TableName {
+			//We got to re-update the table with the entry
+			update_str := `UPDATE ` + rt_db_tbls.customer_table + ` SET customer_name= "` +
+				c_bill.CustomerName + `", table_name= "` + c_bill.TableName + `" WHERE customer_id=` + cust_id
+			err := b.Exec(update_str)
+			if err != nil {
+				loggerUtil.Log.Println("Error: Updating Customer table ", update_str, err.Error())
+				return 0, err
+			}
+			loggerUtil.Debugln(`SUCCESS: Updating Customer Table: ` + c_bill.CustomerName + ` ` + c_bill.TableName)
+		}
+	}
 	insert_str := `INSERT INTO ` + rt_db_tbls.order_updations + ` (uuid, timestamp)` +
 		`VALUES (` +
 		`UNHEX(REPLACE("` + c_bill.UUID + `", "-", "")), "` + current_timestamp + `")`
-	err := b.Exec(insert_str)
+	err = b.Exec(insert_str)
 	if err != nil {
 		loggerUtil.Log.Println("Error: inserting into Order Updations table ", insert_str, err.Error())
 		return 0, err
@@ -217,7 +261,7 @@ func (b *BillAppDB) insert_curent_order_updations(c_bill *Bill, current_timestam
 
 	query_str := `SELECT order_id FROM ` + rt_db_tbls.order_updations + ` WHERE ` +
 		` uuid= UNHEX(REPLACE("` + c_bill.UUID + `", "-", "")) AND timestamp= "` + current_timestamp + `"`
-	json_arr, err := b.getQueryJson(query_str)
+	json_arr, err = b.getQueryJson(query_str)
 	if err != nil {
 		loggerUtil.Log.Println("Error: Failed to obtain the updated order_id ", query_str, err.Error())
 		return 0, err
@@ -459,6 +503,13 @@ func (b *BillAppDB) create_restaurant_db_tables(restaurant_id uint) error {
 		FOREIGN KEY(order_id) REFERENCES ` + db_tb_names.order_updations + `(order_id), 
 		FOREIGN KEY (dishes_id) REFERENCES ` + db_tb_names.dishes + `(id)
 	)`
+	customer_table := `CREATE TABLE IF NOT EXISTS  ` + db_tb_names.customer_table + ` (
+		uuid BINARY(16) NOT NULL,
+		customer_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+		customer_name VARCHAR(255),
+		table_name VARCHAR(255),
+		PRIMARY KEY(customer_id)
+		)`
 
 	err := b.Exec(order_updations_table_str)
 	if err != nil {
@@ -478,6 +529,12 @@ func (b *BillAppDB) create_restaurant_db_tables(restaurant_id uint) error {
 		return err
 	}
 	loggerUtil.Debugln("ORDERS DB Table inserted: SUCCESS: Restaurant id: ", restaurant_id)
+	err = b.Exec(customer_table)
+	if err != nil {
+		loggerUtil.Log.Println("Error: Insert customer table failed for restaurant id ", restaurant_id, err.Error())
+		return err
+	}
+	loggerUtil.Debugln("CUSTOMER DB Table inserted: SUCCESS: Restaurant id: ", restaurant_id)
 
 	loggerUtil.Debugln("All DB TABLES are successfully added for Restaurant id ", restaurant_id)
 	return nil
@@ -502,6 +559,7 @@ func get_restaurant_table_names(restaurant_id uint) restaurant_db_tables {
 		dishes:          begin_value + "dishes",
 		orders:          begin_value + "orders",
 		order_updations: begin_value + "order_updations",
+		customer_table:  begin_value + "customer_table",
 	}
 	return returnValue
 }
