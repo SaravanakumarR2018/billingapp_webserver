@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	// for mysql
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -149,9 +150,10 @@ func (b *BillAppDB) Get(restrnt []byte) ([]byte, error) {
 		return return_value, nil
 	}
 	rstrnt_db_tables := get_restaurant_table_names(restaurant_id)
-	query_str := `SELECT * FROM ` + rstrnt_db_tables.orders +
+	query_str := `SELECT order_id, dishes_id, Quantity,  dish_name, price, tax_percent, tax, max_order_id,
+	BIN_TO_UUID(uuid) as uuid FROM (SELECT * FROM ` + rstrnt_db_tables.orders +
 		` JOIN (SELECT uuid, MAX(order_id) as max_order_id FROM ` +
-		rstrnt_db_tables.order_updations + ` GROUP BY uuid ) t ON t.max_order_id = order_id`
+		rstrnt_db_tables.order_updations + ` GROUP BY uuid ) t ON t.max_order_id = order_id) AS temp`
 	json_map, err := b.getQueryJson(query_str)
 	if err != nil {
 		loggerUtil.Log.Println("Error: Querying the database for restaurant orders ", query_str, err.Error())
@@ -206,7 +208,7 @@ func (b *BillAppDB) insert_curent_order_updations(c_bill *Bill, current_timestam
 
 	insert_str := `INSERT INTO ` + rt_db_tbls.order_updations + ` (uuid, timestamp)` +
 		`VALUES (` +
-		`"` + c_bill.UUID + `", "` + current_timestamp + `")`
+		`UNHEX(REPLACE("` + c_bill.UUID + `", "-", "")), "` + current_timestamp + `")`
 	err := b.Exec(insert_str)
 	if err != nil {
 		loggerUtil.Log.Println("Error: inserting into Order Updations table ", insert_str, err.Error())
@@ -214,7 +216,7 @@ func (b *BillAppDB) insert_curent_order_updations(c_bill *Bill, current_timestam
 	}
 
 	query_str := `SELECT order_id FROM ` + rt_db_tbls.order_updations + ` WHERE ` +
-		` uuid= "` + c_bill.UUID + `" AND timestamp= "` + current_timestamp + `"`
+		` uuid= UNHEX(REPLACE("` + c_bill.UUID + `", "-", "")) AND timestamp= "` + current_timestamp + `"`
 	json_arr, err := b.getQueryJson(query_str)
 	if err != nil {
 		loggerUtil.Log.Println("Error: Failed to obtain the updated order_id ", query_str, err.Error())
