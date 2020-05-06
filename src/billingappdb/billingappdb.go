@@ -29,6 +29,7 @@ type BillAppDB struct {
 	RestaurantTableName string
 }
 type DishEntry struct {
+	Index      uint
 	DishName   string
 	Price      float32
 	Tax        float32
@@ -153,7 +154,7 @@ func (b *BillAppDB) Get(restrnt []byte) ([]byte, error) {
 		return return_value, nil
 	}
 	rstrnt_db_tables := get_restaurant_table_names(restaurant_id)
-	query_str := `SELECT order_id,  dishes_id, Quantity, dish_name, price,tax_percent, tax,
+	query_str := `SELECT order_id,  dishes_id, Quantity, dish_index, dish_name, price,tax_percent, tax,
 	BIN_TO_UUID(CUST_TABLE.uuid) as uuid, customer_id, customer_name, table_name, timestamp FROM 
 	(SELECT * FROM ` + rstrnt_db_tables.orders + ` 
 	JOIN (SELECT OD.uuid as uuid, timestamp, order_id as max_order_id FROM (SELECT DISTINCT uuid, timestamp, order_id from ` + rstrnt_db_tables.order_updations + `) OD
@@ -305,8 +306,8 @@ func (b *BillAppDB) insert_dish_and_get_id(d DishEntry, current_timestamp string
 
 }
 func (b *BillAppDB) insert_orders(d *DishEntry, dishes_id, order_id uint64, rt_db_tbls restaurant_db_tables) error {
-	insert_str := `INSERT INTO ` + rt_db_tbls.orders + ` (order_id, dishes_id, Quantity, dish_name, price, tax_percent, tax) ` +
-		` VALUES (` + fmt.Sprintf("%v", order_id) + `, ` + fmt.Sprintf("%v", dishes_id) + `,` + fmt.Sprintf("%v", d.Quantity) + `, "` + d.DishName + `", ` + fmt.Sprintf("%f", d.Price) + `, ` +
+	insert_str := `INSERT INTO ` + rt_db_tbls.orders + ` (dish_index, order_id, dishes_id, Quantity, dish_name, price, tax_percent, tax) ` +
+		` VALUES (` + fmt.Sprintf("%v", d.Index) + `, ` + fmt.Sprintf("%v", order_id) + `, ` + fmt.Sprintf("%v", dishes_id) + `,` + fmt.Sprintf("%v", d.Quantity) + `, "` + d.DishName + `", ` + fmt.Sprintf("%f", d.Price) + `, ` +
 		fmt.Sprintf("%f", d.TaxPercent) +
 		`, ` + fmt.Sprintf("%f", d.Tax) + `)`
 	err := b.Exec(insert_str)
@@ -493,6 +494,7 @@ func (b *BillAppDB) create_restaurant_db_tables(restaurant_id uint) error {
 		PRIMARY KEY (id)
 	)`
 	orders_insert_table_str := `CREATE TABLE IF NOT EXISTS ` + db_tb_names.orders + ` (
+		dish_index INT UNSIGNED NOT NULL,
 		order_id BIGINT UNSIGNED NOT NULL,
 		dishes_id BIGINT UNSIGNED NOT NULL,
 		Quantity INT UNSIGNED NOT NULL,
