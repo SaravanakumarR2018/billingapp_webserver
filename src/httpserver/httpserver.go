@@ -117,13 +117,60 @@ func Init(ip, port, fs_directory, directory_url, restaurant_url string, billdb *
 	http.HandleFunc(restaurantlist_url, restaurantlist_handler)
 	addnewrestaurant_url := restaurant_url + `/addnewrestaurant`
 	http.HandleFunc(addnewrestaurant_url, addnewrestaurant_handler)
-	loggerUtil.Debugln("Orders url, restaurant list url, add new restaurant url ", orders_url, restaurantlist_url, addnewrestaurant_url)
+	loginHandlerUrl := restaurant_url + `/login`
+	http.HandleFunc(loginHandlerUrl, loginHandler)
+	loggerUtil.Debugln("Orders ", orders_url, restaurantlist_url, addnewrestaurant_url, loginHandler)
 
 	fmt.Printf("Serving %s on HTTP port: %s\n", *directory, *new_port)
 	loggerUtil.Log.Printf("Serving %s on HTTP port: %s\n", *directory, *new_port)
 	log.Fatal(http.ListenAndServe(":"+*new_port, nil))
 }
+func loginHandler(w http.ResponseWriter, req *http.Request) {
+	add_CORS_headers(w, req)
+	if req.Method == http.MethodOptions {
+		loggerUtil.Debugln("loginHandler: Processing OPTIONS method for CORS", req.URL.Path)
+		processOptionsMethod(w, req)
+	} else if req.Method == http.MethodGet {
+		loggerUtil.Debugln("loginHandler: Processing GET method", req.URL.Path)
+		processLoginGetMethod(w, req)
+	} else {
+		loggerUtil.Debugln("loginHandler: Bad Request ", req.URL.Path, req.Method)
+		w.WriteHeader(http.StatusBadRequest)
+	}
 
+}
+func processLoginGetMethod(w http.ResponseWriter, req *http.Request) {
+	err := validateAndConvertEmailAndAuthorize()
+	if err != nil {
+		loggerUtil.Log.Println("processLoginGetMethod: error: Validating and converting Email: " + err.Error())
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	email := req.Header.Get("Email")
+	var NO_EMAIL string
+	if email == NO_EMAIL {
+		loggerUtil.Log.Println("processLoginGetMethod: Email not present in header for the requested URL", req.URL.Path, email)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	password := req.Header.Get("Password")
+	var NO_PASSWORD string
+	if restaurant_name == NO_PASSWORD {
+		loggerUtil.Log.Println("processLoginGetMethod: Password not present in header for the requested URL", req.URL.Path, password)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	err := http_current_server.billdb.verifyEmailAndPassword(email, password)
+	if err != nil {
+		loggerUtil.Log.Println("processLoginGetMethod: Authentication failure" + email + " " + err.Error())
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	token := getToken(email)
+	w.Header.Set("token", token)
+	w.WriteHeader(http.StatusOK)
+
+}
 func addnewrestaurant_handler(w http.ResponseWriter, req *http.Request) {
 	add_CORS_headers(w, req)
 	if req.Method == http.MethodOptions {
