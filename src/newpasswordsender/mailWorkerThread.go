@@ -1,19 +1,9 @@
 package newpasswordsender
 
 import (
-	"encoding/json"
-	"errors"
-	"io/ioutil"
+	"credentials"
 	"loggerUtil"
 	"strings"
-	"credentials"
-)
-
-
-
-
-var (
-	credentials MailCredentils
 )
 
 func SendNewPassword(mail, password string) error {
@@ -25,7 +15,7 @@ func sendRoutinePassword(mail, password string) error {
 
 	// Try opening the file and load the variables
 	loggerUtil.Log.Println("sendRoutinePassword: Mail: Password for " + mail)
-	credentials, err = credentials.GetCredentials()
+	credentials, err := credentials.GetCredentials()
 	if err != nil {
 		loggerUtil.Log.Println("sendRoutinePassword: Error: getting smtp credentials")
 		return err
@@ -36,14 +26,14 @@ func sendRoutinePassword(mail, password string) error {
 	//The receiver needs to be in slice as the receive supports multiple receiver
 	Receiver := []string{mail}
 
-	Subject := "Free Billing App OTP"
+	Subject := "Free Billing App: New Password"
 	message := `
 	<!DOCTYPE HTML PULBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 	<html>
 	<head>
 	<meta http-equiv="content-type" content="text/html"; charset=ISO-8859-1">
 	</head>
-	<body>Your One Time Password: 
+	<body>Your New Password: 
               REPLACE_STRING 
 	</body>
 	</html>
@@ -59,37 +49,4 @@ func sendRoutinePassword(mail, password string) error {
 	}
 	loggerUtil.Log.Println("New Password sent: SUCCESS ")
 	return nil
-}
-
-func processLoginGetMethod(w http.ResponseWriter, req *http.Request) {
-	err := validateAndConvertEmailAndAuthorize()
-	if err != nil {
-		loggerUtil.Log.Println("processLoginGetMethod: error: Validating and converting Email: " + err.Error())
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	email := req.Header.Get("Email")
-	var NO_EMAIL string
-	if email == NO_EMAIL {
-		loggerUtil.Log.Println("processLoginGetMethod: Email not present in header for the requested URL", req.URL.Path, email)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	password := req.Header.Get("Password")
-	var NO_PASSWORD string
-	if restaurant_name == NO_PASSWORD {
-		loggerUtil.Log.Println("processLoginGetMethod: Password not present in header for the requested URL", req.URL.Path, password)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	err := http_current_server.billdb.verifyEmailAndPassword(email, password)
-	if err != nil {
-		loggerUtil.Log.Println("processLoginGetMethod: Authentication failure" + email + " " + err.Error())
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	token := getToken(email)
-	w.Header.Set("token", token)
-	w.WriteHeader(http.StatusOK)
-
 }

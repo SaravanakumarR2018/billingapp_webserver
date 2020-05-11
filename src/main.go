@@ -1,10 +1,13 @@
 package main
 
 import (
+	"billingappdb"
 	"credentials"
 	"cryptography"
 	"fmt"
+	"httpserver"
 	"loggerUtil"
+	"os"
 )
 
 func main() {
@@ -19,7 +22,7 @@ func main() {
 	}
 
 	testing_env := `TESTBILLINGAPP`
-	testbillingapp, ok := os.LookupEnv(testing_env)
+	_, ok := os.LookupEnv(testing_env)
 	if !ok {
 		loggerUtil.Log.Println(testing_env + ": NOT SET: Proceeding with application")
 	} else {
@@ -27,8 +30,7 @@ func main() {
 		main_test()
 		return
 	}
-	
-	
+
 	dbhost_env := "DB_BILLINGAPP_HOST"
 	billingappdb_host, ok := os.LookupEnv(dbhost_env)
 	if !ok {
@@ -82,7 +84,7 @@ func main() {
 	loggerUtil.Log.Println("Billing app DB Init done")
 	httpserver.Init(billingapphttp_ip, billingapphttp_port, billingapphttp_dir, "/", "/restaurant", &bappdb)
 	bappdb.Close()
-	
+
 }
 func main_test() {
 	fmt.Println("Entering main_test")

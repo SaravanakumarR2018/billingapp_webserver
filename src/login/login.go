@@ -4,12 +4,14 @@ import (
 	"billingappdb"
 	"cryptography"
 	"loggerUtil"
-	"net/http"
-	"newpasswordSender"
 	"math/rand"
+	"net/http"
+	"newpasswordsender"
+	"strconv"
 	"time"
 )
-func ChangePassword(w http.ResponseWriter, req *http.Request,  billdb *billingappdb.BillAppDB) {
+
+func ChangePassword(w http.ResponseWriter, req *http.Request, billdb *billingappdb.BillAppDB) {
 	email := req.Header.Get("Email")
 	password := req.Header.Get("Password")
 	var NO_PASSWORD string
@@ -23,35 +25,41 @@ func ChangePassword(w http.ResponseWriter, req *http.Request,  billdb *billingap
 	if err != nil {
 		loggerUtil.Log.Println("ResetPassword: Failure to reset password for Email: " + email + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("ResetPassword: Failure to reset password for Email:" + email + ": " err.Error()))
+		w.Write([]byte("ResetPassword: Failure to reset password for Email:" + email + ": " + err.Error()))
 		return
 	}
+	token, err := cryptography.Encrypt(email)
+	if err != nil {
+		loggerUtil.Log.Println("ChangePassword: acquiring token for login reqest Fail")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("ResetPassword: acquiring token for login reqest Fail"))
+		return
+	}
+	w.Header().Set("token", token)
 	w.WriteHeader(http.StatusOK)
 	return
 }
-func ForgotPassword(w http.ResponseWriter, req *http.Request,  billdb *billingappdb.BillAppDB) {
+func ForgotPassword(w http.ResponseWriter, req *http.Request, billdb *billingappdb.BillAppDB) {
 	email := req.Header.Get("Email")
 	password := generateNewPassword()
 	err := billdb.ResetPassword(email, password)
 	if err != nil {
 		loggerUtil.Log.Println("ForgotPassword: Failure to change password for Email: " + email + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("ForgotPassword: Failure to change password for Email:" + email + ": " err.Error()))
+		w.Write([]byte("ForgotPassword: Failure to change password for Email:" + email + ": " + err.Error()))
 		return
 	}
-	err = newpasswordSender.SendNewPassword(email, password)
-	if (err != nil) {
+	err = newpasswordsender.SendNewPassword(email, password)
+	if err != nil {
 		loggerUtil.Log.Println("ForgotPassword: FAILURE: Send Email of new Password for " + email)
 		w.WriteHeader(http.StatusInternalServerError)
-		return err
+		w.Write([]byte("ForgotPassword: Failure to send password to Email:" + email + ": " + err.Error()))
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 	return
-	
-
 
 }
-
 
 func ProcessLoginGetMethod(w http.ResponseWriter, req *http.Request, billdb *billingappdb.BillAppDB) {
 	email := req.Header.Get("Email")
@@ -70,9 +78,11 @@ func ProcessLoginGetMethod(w http.ResponseWriter, req *http.Request, billdb *bil
 		w.Write([]byte("Error retrieving " + email))
 		return
 	}
+	loggerUtil.Debugln("ProcessLoginGetMethod: Validity of email " + email + " is " + strconv.FormatBool(isEmailValid))
 	if !isEmailValid {
-		loggerUtil.Log.Println("processLoginGetMethod: Authentication failure" + email + " " + err.Error())
+		loggerUtil.Log.Println("processLoginGetMethod: Authentication failure" + email)
 		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Authentication Failure: Email: " + email))
 		return
 	}
 	token, err := cryptography.Encrypt(email)

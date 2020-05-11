@@ -637,9 +637,9 @@ func (b *BillAppDB) ResetPassword(email, password string) error {
 
 func (b *BillAppDB) VerifyEmailAndPassword(email, password string) (bool, error) {
 	query_str := `SELECT email FROM ` + b.PasswordTableName + ` WHERE email="` + email +
-		`" AND password=UNHEX(MD5("` + password + `"))`
+		`" AND passwordmd5=UNHEX(MD5("` + password + `"))`
 	maskedQueryStr := `SELECT email FROM ` + b.PasswordTableName + ` WHERE email="` + email +
-		`" AND password=UNHEX(MD5("` + "masked" + `"))`
+		`" AND passwordmd5=UNHEX(MD5("` + "masked" + `"))`
 	userEntryMap, err := b.getQueryJson(query_str)
 	if err != nil {
 
