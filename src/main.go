@@ -2,6 +2,8 @@ package main
 
 import (
 	"billingappdb"
+	"credentials"
+	"cryptography"
 	"fmt"
 	"httpserver"
 	"loggerUtil"
@@ -12,6 +14,23 @@ func main() {
 	loggerUtil.InitLog("billingapp.log")
 	loggerUtil.SetDebug(true)
 	loggerUtil.Log.Println("Billingapp first log")
+	_, err := credentials.GetCredentials()
+	if err != nil {
+		loggerUtil.Log.Println("main: Error getting Credentials from json file" + credentials.CredentialFileName + err.Error())
+		fmt.Println("main: Error getting Credentials from json file" + credentials.CredentialFileName + err.Error())
+		return
+	}
+
+	testing_env := `TESTBILLINGAPP`
+	_, ok := os.LookupEnv(testing_env)
+	if !ok {
+		loggerUtil.Log.Println(testing_env + ": NOT SET: Proceeding with application")
+	} else {
+		loggerUtil.Log.Println(testing_env + ":  SET: Executing testcases for the application")
+		main_test()
+		return
+	}
+
 	dbhost_env := "DB_BILLINGAPP_HOST"
 	billingappdb_host, ok := os.LookupEnv(dbhost_env)
 	if !ok {
@@ -65,4 +84,18 @@ func main() {
 	loggerUtil.Log.Println("Billing app DB Init done")
 	httpserver.Init(billingapphttp_ip, billingapphttp_port, billingapphttp_dir, "/", "/restaurant", &bappdb)
 	bappdb.Close()
+
+}
+func main_test() {
+	fmt.Println("Entering main_test")
+	crypt, err := cryptography.Encrypt("saravana.k.r@gmail.com")
+	if err != nil {
+		fmt.Println("main_test: Encrypt email " + "saravana.k.r@gmail.com" + crypt)
+	}
+	fmt.Println("cipher text " + crypt)
+	email, err := cryptography.Decrypt(crypt)
+	if err != nil {
+		fmt.Println("main_test: Decrypt cipher " + crypt + email)
+	}
+	fmt.Println("Decrypted email " + email)
 }
