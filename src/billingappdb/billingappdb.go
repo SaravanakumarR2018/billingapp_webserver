@@ -27,6 +27,7 @@ type BillAppDB struct {
 	Password            string
 	DBname              string
 	RestaurantTableName string
+	PasswordTableName   string
 }
 type DishEntry struct {
 	Index      uint
@@ -86,12 +87,12 @@ func Init(Host, Port, Username, Password, DBname string) (BillAppDB, error) {
 		loggerUtil.Log.Println("Error: Could not connect to DB for 10 seconds: Exit")
 		return BillAppDB{}, err
 	}
-	bappdb := BillAppDB{Billdb, Host, Port, Username, Password, DBname, "restaurant"}
+	bappdb := BillAppDB{Billdb, Host, Port, Username, Password, DBname, "restaurant", "password"}
 
 	loggerUtil.Debugln(bappdb.Host + bappdb.Port + bappdb.Username + bappdb.Password +
-		bappdb.DBname + bappdb.RestaurantTableName)
+		bappdb.DBname + bappdb.RestaurantTableName + bappdb.PasswordTableName)
 
-	exec_str := `CREATE TABLE IF NOT EXISTS restaurant (
+	exec_str := `CREATE TABLE IF NOT EXISTS ` + bappdb.RestaurantTableName + ` (
 		id INT NOT NULL AUTO_INCREMENT,
 		email VARCHAR(1024) NOT NULL,
 		name VARCHAR(255) NOT NULL,
@@ -101,6 +102,18 @@ func Init(Host, Port, Username, Password, DBname string) (BillAppDB, error) {
 	_, err = Billdb.Exec(exec_str)
 	if err != nil {
 		loggerUtil.Log.Println("Error: Exec create table restaurant failed" + err.Error())
+		return bappdb, err
+	}
+
+	exec_str = `CREATE TABLE IF NOT EXISTS ` + bappdb.PasswordTableName + ` (
+		email VARCHAR(1024) NOT NULL,
+		passwordmd5 BINARY(16) NOT NULL,
+		create_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		last_update_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);`
+	_, err = Billdb.Exec(exec_str)
+	if err != nil {
+		loggerUtil.Log.Println("Error: Exec create table password failed" + err.Error())
 		return bappdb, err
 	}
 	return bappdb, nil
@@ -575,5 +588,70 @@ func (b *BillAppDB) get_current_timestamp() (string, error) {
 	loggerUtil.Debugln("Obtained current timestamp", returnJson)
 	FIRST_ELEMENT := 0
 	return returnJson[FIRST_ELEMENT]["CURRENT_TIMESTAMP"], nil
+
+}
+
+func (b *BillAppDB) ResetPassword(email, password string) error {
+	query_str := `SELECT email FROM ` + b.PasswordTableName + ` WHERE email="` + email + `"`
+	userEntryMap, err := b.getQueryJson(query_str)
+	if err != nil {
+		loggerUtil.Log.Println("resetPassword: Error Obtaining userentry from password Table: ", query_str, err.Error())
+		return err
+	}
+	if len(userEntryMap) == 0 {
+		// First time - Add entry to the table
+		execStr := `INSERT INTO ` + b.PasswordTableName +
+			` (email, passwordmd5) VALUES ("` + email + `", UNHEX(MD5("` + password + `")))`
+		err = b.Exec(execStr)
+		if err != nil {
+			execStr := `INSERT INTO ` + b.PasswordTableName +
+				` (email, passwordmd5) VALUES ("` + email + `", UNHEX(MD5("` + "masked" + `")))`
+			loggerUtil.Log.Println("resetPassword: Error: inserting into password table ", execStr, err.Error())
+			return err
+		}
+
+	} else {
+		timestamp, err := b.get_current_timestamp()
+		if err != nil {
+			loggerUtil.Log.Println("resetPassword: Error getting current timestamp: " + err.Error())
+			return err
+		}
+		// update the entry with the new password
+		execStr := `UPDATE ` + b.PasswordTableName + ` SET 
+		passwordmd5=UNHEX(MD5("` + password + `")), 
+		last_update_timestamp = "` + timestamp + `" WHERE 
+		email = "` + email + `"`
+		err = b.Exec(execStr)
+		if err != nil {
+			execStr := `UPDATE ` + b.PasswordTableName + ` SET 
+			passwordmd5=UNHEX(MD5("` + "masked" + `")), 
+			last_update_timestamp = "` + timestamp + `" WHERE 
+			email = "` + email + `"`
+			loggerUtil.Log.Println("resetPassword: Error: updating password table ", execStr, err.Error())
+			return err
+		}
+
+	}
+	return nil
+}
+
+func (b *BillAppDB) VerifyEmailAndPassword(email, password string) (bool, error) {
+	query_str := `SELECT email FROM ` + b.PasswordTableName + ` WHERE email="` + email +
+		`" AND password=UNHEX(MD5("` + password + `"))`
+	maskedQueryStr := `SELECT email FROM ` + b.PasswordTableName + ` WHERE email="` + email +
+		`" AND password=UNHEX(MD5("` + "masked" + `"))`
+	userEntryMap, err := b.getQueryJson(query_str)
+	if err != nil {
+
+		loggerUtil.Log.Println("verifyEmailAndPassword: Error Obtaining userentry from password Table: ",
+			maskedQueryStr, err.Error())
+		return false, err
+	}
+	if len(userEntryMap) == 0 {
+		loggerUtil.Log.Println("verifyEmailAndPassword: No Entry for given username and password", maskedQueryStr)
+		return false, nil
+	}
+	loggerUtil.Debugln("verifyEmailAndPassword: PRESENT: Entry for given username and password", maskedQueryStr)
+	return true, nil
 
 }

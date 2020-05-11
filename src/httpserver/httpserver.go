@@ -9,10 +9,21 @@ import (
 	"io"
 	"log"
 	"loggerUtil"
+	"login"
 	"net/http"
+	"regexp"
 	"strings"
+	"cryptography"
 
 	"github.com/golang/gddo/httputil/header"
+)
+
+const (
+	Email string = "^(((([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+(\\.([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+)*)|((\\x22)((((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(([\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]|\\x21|[\\x23-\\x5b]|[\\x5d-\\x7e]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(\\([\\x01-\\x09\\x0b\\x0c\\x0d-\\x7f]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}]))))*(((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(\\x22)))@((([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|\\.|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.)+(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.?$"
+)
+
+var (
+	rxEmail = regexp.MustCompile(Email)
 )
 
 type malformedRequest struct {
@@ -24,7 +35,7 @@ func (mr *malformedRequest) Error() string {
 	return mr.msg
 }
 
-func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}) error {
+func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}, emailToLower=true bool) error {
 	if r.Header.Get("Content-Type") != "" {
 		value, _ := header.ParseValueAndParams(r.Header, "Content-Type")
 		if !strings.Contains(value, "application/json") {
@@ -79,7 +90,9 @@ func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}) err
 		msg := "Request body must only contain a single JSON object"
 		return &malformedRequest{status: http.StatusBadRequest, msg: msg}
 	}
-
+	if emailToLower == true {
+		dst.Email = strings.ToLower(dst.Email)
+	}
 	return nil
 }
 
@@ -111,72 +124,97 @@ func Init(ip, port, fs_directory, directory_url, restaurant_url string, billdb *
 	flag.Parse()
 	fileServer := http.FileServer(FileSystem{http.Dir(*directory)})
 	http.Handle(directory_url, http.StripPrefix(strings.TrimRight(directory_url, directory_url), fileServer))
-	orders_url := restaurant_url + `/orders`
-	http.HandleFunc(orders_url, orders_handler)
-	restaurantlist_url := restaurant_url + `/restaurantlist`
-	http.HandleFunc(restaurantlist_url, restaurantlist_handler)
-	addnewrestaurant_url := restaurant_url + `/addnewrestaurant`
-	http.HandleFunc(addnewrestaurant_url, addnewrestaurant_handler)
-	loginHandlerUrl := restaurant_url + `/login`
-	http.HandleFunc(loginHandlerUrl, loginHandler)
-	loggerUtil.Debugln("Orders ", orders_url, restaurantlist_url, addnewrestaurant_url, loginHandler)
-
+	http.HandleFunc(restaurant_url, umbrella_handler)
 	fmt.Printf("Serving %s on HTTP port: %s\n", *directory, *new_port)
 	loggerUtil.Log.Printf("Serving %s on HTTP port: %s\n", *directory, *new_port)
 	log.Fatal(http.ListenAndServe(":"+*new_port, nil))
 }
-func loginHandler(w http.ResponseWriter, req *http.Request) {
+func umbrellaHandler(w http.ResponseWriter, req *http.Request) {
+	loggerUtil.Debugln("Orders ", orders_url, restaurantlist_url, addnewrestaurant_url, loginHandler)
+	orders_url := restaurant_url + `/orders`
+	restaurantlist_url := restaurant_url + `/restaurantlist`
+	addnewrestaurant_url := restaurant_url + `/addnewrestaurant`
+	loginHandlerUrl := restaurant_url + `/login`
+	resetPasswordUrl := restaurant_url + `/resetPassword`
+	forgotPasswordUrl := restaurant_url + `/forgotPassword`
 	add_CORS_headers(w, req)
 	if req.Method == http.MethodOptions {
-		loggerUtil.Debugln("loginHandler: Processing OPTIONS method for CORS", req.URL.Path)
+		loggerUtil.Debugln("umbrellaHandler: Processing OPTIONS method for CORS", req.URL.Path)
 		processOptionsMethod(w, req)
-	} else if req.Method == http.MethodGet {
+		return
+	}
+	err := validateEmail(req)
+	if err != nil {
+		loggerUtil.Log.Println("umbrellaHandler: Error: Validating and Converting Email fields " + err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid Email address " + err.Error()))
+		return
+	}
+
+	if req.URL.Path == loginHandlerUrl {
+		loginHandler(w, req)
+		return
+	}
+	err := authorizeRequest(req)
+	if err != nil {
+		loggerUtil.Log.Println("umbrellaHandler: Error: Request Not Authorized: " + err.Error())
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Invalid Session and User"))
+		return
+	}
+
+	if req.URL.Path == orders_url {
+		orders_handler(w, req)
+		return
+	} else if req.URL.Path == restaurantlist_url {
+		restaurantlist_handler(w, req)
+		return
+	} else if req.URL.Path == addnewrestaurant_url {
+		addnewrestaurant_handler(w, req)
+		return
+	} else if req.URL.Path == resetPasswordUrl {
+		resetPassword_handler(w, req)
+		return
+	} else if req.URL.Path == forgotPasswordUrl {
+		forgotPassword_handler(w, req)
+		return
+	} else {
+		loggerUtil.Log.Debugln("Bad request url ", req.URL.Path)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+}
+func resetPassword_handler (w http.ResponseWriter, req *http.Request) {
+	if req.Method == http.MethodGet {
+		loggerUtil.Debugln("resetPassword_handler: Processing GET method", req.URL.Path)
+		login.ChangePassword(w, req, http_current_server.billdb)
+	} else {
+		loggerUtil.Debugln("resetPassword_handler: Bad Request ", req.URL.Path, req.Method)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+}
+
+func forgotPassword_handler (w http.ResponseWriter, req *http.Request) {
+	if req.Method == http.MethodGet {
+		loggerUtil.Debugln("forgotPassword_handler: Processing GET method", req.URL.Path)
+		login.ForgotPassword(w, req, http_current_server.billdb)
+	} else {
+		loggerUtil.Debugln("forgotPassword_handler: Bad Request ", req.URL.Path, req.Method)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+} 
+func loginHandler(w http.ResponseWriter, req *http.Request) {
+	if req.Method == http.MethodGet {
 		loggerUtil.Debugln("loginHandler: Processing GET method", req.URL.Path)
-		processLoginGetMethod(w, req)
+		login.ProcessLoginGetMethod(w, req)
 	} else {
 		loggerUtil.Debugln("loginHandler: Bad Request ", req.URL.Path, req.Method)
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
 }
-func processLoginGetMethod(w http.ResponseWriter, req *http.Request) {
-	err := validateAndConvertEmailAndAuthorize()
-	if err != nil {
-		loggerUtil.Log.Println("processLoginGetMethod: error: Validating and converting Email: " + err.Error())
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	email := req.Header.Get("Email")
-	var NO_EMAIL string
-	if email == NO_EMAIL {
-		loggerUtil.Log.Println("processLoginGetMethod: Email not present in header for the requested URL", req.URL.Path, email)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	password := req.Header.Get("Password")
-	var NO_PASSWORD string
-	if restaurant_name == NO_PASSWORD {
-		loggerUtil.Log.Println("processLoginGetMethod: Password not present in header for the requested URL", req.URL.Path, password)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	err := http_current_server.billdb.verifyEmailAndPassword(email, password)
-	if err != nil {
-		loggerUtil.Log.Println("processLoginGetMethod: Authentication failure" + email + " " + err.Error())
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	token := getToken(email)
-	w.Header.Set("token", token)
-	w.WriteHeader(http.StatusOK)
 
-}
 func addnewrestaurant_handler(w http.ResponseWriter, req *http.Request) {
-	add_CORS_headers(w, req)
-	if req.Method == http.MethodOptions {
-		loggerUtil.Debugln("addnewrestaurant_handler: Processing OPTIONS method for CORS", req.URL.Path)
-		processOptionsMethod(w, req)
-	} else if req.Method == http.MethodPost {
+	if req.Method == http.MethodPost {
 		loggerUtil.Debugln("addnewrestaurant_handler: Processing POST method", req.URL.Path)
 		processAddNewRestaurantMethod(w, req)
 	} else {
@@ -195,11 +233,7 @@ func add_CORS_headers(w http.ResponseWriter, req *http.Request) {
 }
 
 func restaurantlist_handler(w http.ResponseWriter, req *http.Request) {
-	add_CORS_headers(w, req)
-	if req.Method == http.MethodOptions {
-		loggerUtil.Debugln("restaurantlist_handler: Processing OPTIONS method for CORS", req.URL.Path)
-		processOptionsMethod(w, req)
-	} else if req.Method == http.MethodGet {
+	if req.Method == http.MethodGet {
 		loggerUtil.Debugln("restaurantlist_handler: Processing GET method", req.URL.Path)
 		processRstrntListGETMethod(w, req)
 	} else {
@@ -209,11 +243,7 @@ func restaurantlist_handler(w http.ResponseWriter, req *http.Request) {
 }
 
 func orders_handler(w http.ResponseWriter, req *http.Request) {
-	add_CORS_headers(w, req)
-	if req.Method == http.MethodOptions {
-		loggerUtil.Debugln("orders_handler: Processing OPTIONS method for CORS", req.URL.Path)
-		processOptionsMethod(w, req)
-	} else if req.Method == http.MethodPost {
+	if req.Method == http.MethodPost {
 		loggerUtil.Debugln("orders_handler: Processing POST method", req.URL.Path)
 		processPOSTMethod(w, req)
 	} else if req.Method == http.MethodGet {
@@ -319,6 +349,7 @@ func processRstrntListGETMethod(w http.ResponseWriter, req *http.Request) {
 	return
 
 }
+
 func processGETMethod(w http.ResponseWriter, req *http.Request) {
 
 	loggerUtil.Debugln("Correct Request URL ", req.URL.Path)
@@ -380,4 +411,89 @@ func (fs FileSystem) Open(path string) (http.File, error) {
 	}
 
 	return f, nil
+}
+func isValidEmail(email string) bool {
+	return rxEmail.MatchString(str)
+}
+func validateEmail(req *http.Request) error {
+	emailHeader = "Email"
+	if req.Method == http.MethodGet {
+		email := req.Header.Get(emailHeader)
+		var NO_EMAIL string
+		if email == NO_EMAIL {
+			loggerUtil.Log.Println("validateEmail: Email not present in header for the requested URL", req.URL.Path, email)
+			return errors.New("Email field cannot be empty")
+		}
+		
+		if !isValidEmail(email) {
+			loggerUtil.Log.Println("validateEmail: Email is not valid: Get Request: " + email)
+			return errors.New("Email is not valid " + email)
+		}
+
+	} else if req.Method == http.MethodPost {
+
+		var c_bill billingappdb.Bill
+		err := decodeJSONBody(w, req, &c_bill, emailToLower=false)
+		if err != nil {
+			var mr *malformedRequest
+			loggerUtil.Log.Println("Error: validateEmail: POST: Malformed Request: ", err.Error())
+			if errors.As(err, &mr) {
+				err = errors.New("Malformed Json in POST Request")
+			} else {
+				err = errors.New("Malformed Json in POST Request")
+			}
+			return err
+		}
+		email := c_bill.Email
+		var NO_EMAIL string
+		if email == NO_EMAIL {
+			loggerUtil.Log.Println("validateEmail: Email not present in header for the requested POST URL", req.URL.Path, email)
+			return errors.New("Email field cannot be empty: POST request")
+		}
+		if !isValidEmail(email) {
+			loggerUtil.Log.Println("validateEmail: Email is not valid: Post Reqest" + email)
+			return errors.New("Email is not valid " + email)
+		}
+
+
+	} else {
+		loggerUtil.Log.Println("validateEmail: Error: Cannot have MEthod other than GET and Post")
+		return errors.New("Only GET and POST request methods allowed")
+	}
+	return nil
+}
+
+func authorizeRequest(req *http.Request) error {
+	emailHeader = "Email"
+	authorizationHeader = "Authorization"
+	token := req.Header.Get(authorizationHeader)
+	var email string
+	var NOTOKEN string
+	if token == NOTOKEN {
+		loggerUtil.Log.Println("authorizeRequest: Token not present in header for the requested URL", req.URL.Path, email)
+		return errors.New("Token field cannot be empty")
+	}
+	if req.Method == http.MethodGet {
+		email := req.Header.Get(emailHeader)
+	} else if req.Method == http.MethodPost {
+
+		var c_bill billingappdb.Bill
+		err := decodeJSONBody(w, req, &c_bill)
+		email := c_bill.Email
+
+	} else {
+		loggerUtil.Log.Println("authorizeRequest: Error: Cannot have MEthod other than GET and Post")
+		return errors.New("Only GET and POST request methods allowed")
+	}
+	tokenString,err := cryptography.Decrypt(token)
+	if err != nil {
+		loggerUtil.Log.Println("authorizeRequest: Error Decrypting Token " + token)
+		return errors.New("Decrypting Token Failure")
+	}
+	if email != tokenString {
+		loggerUtil.Debugln("Token not valid for current user: " + email)
+		return errors.New("Token Not valid for current user: " + email)
+	}
+	loggerUtil.Debugln("Token valid for current user: " + email)
+	return nil
 }
