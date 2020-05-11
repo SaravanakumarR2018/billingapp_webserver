@@ -635,7 +635,14 @@ func (b *BillAppDB) ResetPassword(email, password string) error {
 	return nil
 }
 
-func (b *BillAppDB) VerifyEmailAndPassword(email, password string) (bool, error) {
+const (
+	AUTHORIZATIONSUCCESS      = "AuthorizationSuccess"
+	EMAILNOEXIST              = "EmailNoExist"
+	EMAILEXISTPASSWORDFAILURE = "EmailExistPasswordFailure"
+	UNKNOWN                   = "Unknown"
+)
+
+func (b *BillAppDB) VerifyEmailAndPassword(email, password string) (string, error) {
 	query_str := `SELECT email FROM ` + b.PasswordTableName + ` WHERE email="` + email +
 		`" AND passwordmd5=UNHEX(MD5("` + password + `"))`
 	maskedQueryStr := `SELECT email FROM ` + b.PasswordTableName + ` WHERE email="` + email +
@@ -645,13 +652,25 @@ func (b *BillAppDB) VerifyEmailAndPassword(email, password string) (bool, error)
 
 		loggerUtil.Log.Println("verifyEmailAndPassword: Error Obtaining userentry from password Table: ",
 			maskedQueryStr, err.Error())
-		return false, err
+		return UNKNOWN, err
 	}
 	if len(userEntryMap) == 0 {
-		loggerUtil.Log.Println("verifyEmailAndPassword: No Entry for given username and password", maskedQueryStr)
-		return false, nil
+		//Check whether the email is present in Database
+		query_str := `SELECT email FROM ` + b.PasswordTableName + ` WHERE email="` + email + `"`
+		emailEntryMap, err := b.getQueryJson(query_str)
+		if err != nil {
+			loggerUtil.Log.Println("verifyEmailAndPassword: Error Obtaining email from password Table: ", query_str, err.Error())
+			return UNKNOWN, err
+		}
+		if len(emailEntryMap) == 0 {
+			loggerUtil.Debugln("Email ID is not present in system")
+			return EMAILNOEXIST, nil
+		}
+
+		loggerUtil.Log.Println("verifyEmailAndPassword: Email exists and password failure", maskedQueryStr)
+		return EMAILEXISTPASSWORDFAILURE, nil
 	}
 	loggerUtil.Debugln("verifyEmailAndPassword: PRESENT: Entry for given username and password", maskedQueryStr)
-	return true, nil
+	return AUTHORIZATIONSUCCESS, nil
 
 }

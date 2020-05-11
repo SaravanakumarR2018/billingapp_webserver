@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net/http"
 	"newpasswordsender"
-	"strconv"
 	"time"
 )
 
@@ -71,19 +70,31 @@ func ProcessLoginGetMethod(w http.ResponseWriter, req *http.Request, billdb *bil
 		w.Write([]byte("Password not present in header for the requested URL"))
 		return
 	}
-	isEmailValid, err := billdb.VerifyEmailAndPassword(email, password)
+	authorizationStatus, err := billdb.VerifyEmailAndPassword(email, password)
 	if err != nil {
 		loggerUtil.Log.Println("processLoginGetMethod: Error retrieving " + email + " " + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("Error retrieving " + email))
 		return
 	}
-	loggerUtil.Debugln("ProcessLoginGetMethod: Validity of email " + email + " is " + strconv.FormatBool(isEmailValid))
-	if !isEmailValid {
-		loggerUtil.Log.Println("processLoginGetMethod: Authentication failure" + email)
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Authentication Failure: Email: " + email))
+	loggerUtil.Debugln("ProcessLoginGetMethod: Validity of email " + email + " is " + authorizationStatus)
+	if authorizationStatus == billingappdb.EMAILNOEXIST {
+		loggerUtil.Log.Println("processLoginGetMethod: Email does not exist in system: Use Sign Up" + email)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Use Sign Up button : Email: " + email))
 		return
+	} else if authorizationStatus == billingappdb.EMAILEXISTPASSWORDFAILURE {
+		loggerUtil.Log.Println("processLoginGetMethod: Password Invalid for email: " + email)
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Use Forgot Password button to recover password for Email: " + email))
+		return
+	} else if authorizationStatus == billingappdb.UNKNOWN {
+		loggerUtil.Log.Println("processLoginGetMethod: Unknown error during login for email: " + email)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(" Unknown error during login for email: " + email))
+		return
+	} else if authorizationStatus == billingappdb.AUTHORIZATIONSUCCESS {
+		loggerUtil.Log.Println("processLoginGetMethod: Authorization Success email: " + email)
 	}
 	token, err := cryptography.Encrypt(email)
 	if err != nil {
