@@ -148,17 +148,17 @@ func umbrellaHandler(w http.ResponseWriter, req *http.Request) {
 	loginHandlerUrl := RestaurantUrl + `/login`
 	resetPasswordUrl := RestaurantUrl + `/resetPassword`
 	forgotPasswordUrl := RestaurantUrl + `/forgotPassword`
+	add_CORS_headers(w, req)
+	if req.Method == http.MethodOptions {
+		loggerUtil.Debugln("umbrellaHandler: Processing OPTIONS method for CORS", req.URL.Path)
+		processOptionsMethod(w, req)
+		return
+	}
 	c_bill_ptr, err := getCurrentBillEntries(w, req)
 	if err != nil {
 		loggerUtil.Log.Println("umbrellaHandler: Error Converting body to c_bill")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Malformed Request: should be a json"))
-		return
-	}
-	add_CORS_headers(w, req)
-	if req.Method == http.MethodOptions {
-		loggerUtil.Debugln("umbrellaHandler: Processing OPTIONS method for CORS", req.URL.Path)
-		processOptionsMethod(w, req)
 		return
 	}
 	err = validateEmail(w, req, c_bill_ptr)
@@ -245,6 +245,7 @@ func addnewrestaurant_handler(w http.ResponseWriter, req *http.Request, c_bill_p
 }
 
 func processOptionsMethod(w http.ResponseWriter, req *http.Request) {
+	loggerUtil.Debugln("processOptionsMethod: Returning HTTP Status OK")
 	w.WriteHeader(http.StatusOK)
 }
 func add_CORS_headers(w http.ResponseWriter, req *http.Request) {
