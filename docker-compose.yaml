@@ -19,6 +19,7 @@ services:
             - /billingapp/bin:/usr/local/sbin
             - /var/www/html:/var/www/html
             - /billingapp/logs:/root
+            - /billingapp/credentials:/root/credentials
         environment:
             - DB_BILLINGAPP_HOST=database
             - DB_BILLINGAPP_USER=root

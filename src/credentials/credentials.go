@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"loggerUtil"
+	"os"
 	"sync"
 )
 
@@ -35,7 +36,14 @@ func GetCredentials() (Credentials, error) {
 }
 func fillCredentials() {
 	globalErr = errors.New("fillCredentials: Begin Error")
-	credentailsFileBytes, err := ioutil.ReadFile(CredentialFileName)
+	home_env := `HOME`
+	home, ok := os.LookupEnv(home_env)
+	if !ok {
+		loggerUtil.Log.Println(home_env + ": NOT SET: Proceeding with /root as home")
+		home = `/root`
+	}
+	credentialdir := home + `/credentials/`
+	credentailsFileBytes, err := ioutil.ReadFile(credentialdir + CredentialFileName)
 	if err != nil {
 		loggerUtil.Log.Println("getCredentials: Error: Opening file: " + CredentialFileName + " " + err.Error())
 		globalErr = err
