@@ -14,20 +14,20 @@ func main() {
 	loggerUtil.InitLog("billingapp.log")
 	loggerUtil.SetDebug(true)
 	loggerUtil.Log.Println("Billingapp first log")
-	_, err := credentials.GetCredentials()
+	cred, err := credentials.GetCredentials()
 	if err != nil {
 		loggerUtil.Log.Println("main: Error getting Credentials from json file" + credentials.CredentialFileName + err.Error())
 		fmt.Println("main: Error getting Credentials from json file" + credentials.CredentialFileName + err.Error())
+
 		return
 	}
-
 	testing_env := `TESTBILLINGAPP`
 	_, ok := os.LookupEnv(testing_env)
 	if !ok {
 		loggerUtil.Log.Println(testing_env + ": NOT SET: Proceeding with application")
 	} else {
 		loggerUtil.Log.Println(testing_env + ":  SET: Executing testcases for the application")
-		main_test()
+		main_test(&cred)
 		return
 	}
 
@@ -86,8 +86,9 @@ func main() {
 	bappdb.Close()
 
 }
-func main_test() {
+func main_test(cred *credentials.Credentials) {
 	fmt.Println("Entering main_test")
+	fmt.Println(cred.Email + " " + cred.Password + " " + cred.SmtpServer + " " + cred.TokenAuthKey)
 	crypt, err := cryptography.Encrypt("saravana.k.r@gmail.com")
 	if err != nil {
 		fmt.Println("main_test: Encrypt email " + "saravana.k.r@gmail.com" + crypt)

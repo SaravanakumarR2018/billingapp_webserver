@@ -2,7 +2,6 @@ package httpserver
 
 import (
 	"billingappdb"
-	"cryptography"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -180,7 +179,7 @@ func umbrellaHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = authorizeRequest(w, req, c_bill_ptr)
+	err = authorizeRequest(w, req, c_bill_ptr, http_current_server.billdb)
 	if err != nil {
 		loggerUtil.Log.Println("umbrellaHandler: Error: Request Not Authorized: " + err.Error())
 		w.WriteHeader(http.StatusUnauthorized)
@@ -451,7 +450,7 @@ func validateEmail(w http.ResponseWriter, req *http.Request, c_bill_ptr *billing
 	return nil
 }
 
-func authorizeRequest(w http.ResponseWriter, req *http.Request, c_bill_ptr *(billingappdb.Bill)) error {
+func authorizeRequest(w http.ResponseWriter, req *http.Request, c_bill_ptr *(billingappdb.Bill), billDb *billingappdb.BillAppDB) error {
 	emailHeader := "Email"
 	authorizationHeader := "Authorization"
 	token := req.Header.Get(authorizationHeader)
@@ -472,13 +471,12 @@ func authorizeRequest(w http.ResponseWriter, req *http.Request, c_bill_ptr *(bil
 		loggerUtil.Log.Println("authorizeRequest: Error: Cannot have MEthod other than GET and Post")
 		return errors.New("Only GET and POST request methods allowed")
 	}
-	tokenString, err := cryptography.Decrypt(token)
+	isValid, err := login.VerifyToken(email, token, billDb)
 	if err != nil {
-		loggerUtil.Log.Println("authorizeRequest: Error Decrypting Token " + token)
-		return errors.New("Decrypting Token Failure")
+		loggerUtil.Log.Println("authorizeRequest: Failure Verify token " + token + " " + email)
+		return errors.New("Failure: token verify of email: " + email)
 	}
-	loggerUtil.Debugln("authorizeRequest: Email and decrypted Token String" + email + " Decrypted string: " + tokenString)
-	if email != tokenString {
+	if !isValid {
 		loggerUtil.Debugln("Token not valid for current user: " + email)
 		return errors.New("Token Not valid for current user: " + email)
 	}

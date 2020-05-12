@@ -591,7 +591,7 @@ func (b *BillAppDB) get_current_timestamp() (string, error) {
 
 }
 
-func (b *BillAppDB) ResetPassword(email, password string) error {
+func (b *BillAppDB) ResetPassword(email, oldPassword, password string, forgotPassword bool) error {
 	query_str := `SELECT email FROM ` + b.PasswordTableName + ` WHERE email="` + email + `"`
 	userEntryMap, err := b.getQueryJson(query_str)
 	if err != nil {
@@ -611,6 +611,21 @@ func (b *BillAppDB) ResetPassword(email, password string) error {
 		}
 
 	} else {
+		if !forgotPassword {
+			query_str := `SELECT email FROM ` + b.PasswordTableName + ` WHERE email="` + email +
+				`" AND passwordmd5=UNHEX(MD5("` + oldPassword + `"))`
+			userEntryMap, err := b.getQueryJson(query_str)
+			if err != nil {
+				loggerUtil.Log.Println(`resetPassword: Error obtaining details of 
+				oldPassword with email: `, query_str, err.Error())
+				return err
+			}
+			if len(userEntryMap) == 0 {
+				loggerUtil.Log.Println("resetPassword: Old Password does not match with Email", query_str)
+				return errors.New("Old Password Does not match with email")
+			}
+		}
+
 		timestamp, err := b.get_current_timestamp()
 		if err != nil {
 			loggerUtil.Log.Println("resetPassword: Error getting current timestamp: " + err.Error())
@@ -642,6 +657,25 @@ const (
 	UNKNOWN                   = "Unknown"
 )
 
+func (b *BillAppDB) GetMD5(email string) (string, error) {
+	passwordmd5 := "passwordmd5"
+	var md5 string
+	query_str := `SELECT ` + passwordmd5 + ` FROM ` + b.PasswordTableName + ` WHERE email="` + email + `"`
+	md5EntryMap, err := b.getQueryJson(query_str)
+	if err != nil {
+		loggerUtil.Log.Println("GetMD5: Error Obtaining md5 entry from password Table: ", query_str, err.Error())
+		return md5, err
+	}
+	if len(md5EntryMap) == 0 {
+		loggerUtil.Log.Println("GetMD5: No passwordmd5 for email " + email)
+		return md5, errors.New("No passwordmd5 for email: " + email)
+	}
+	FIRST_ELEMENT := 0
+	md5 = md5EntryMap[FIRST_ELEMENT][passwordmd5]
+	loggerUtil.Debugln("GetMD5: Md5 for email: " + email + " " + md5)
+	return md5, nil
+
+}
 func (b *BillAppDB) VerifyEmailAndPassword(email, password string) (string, error) {
 	query_str := `SELECT email FROM ` + b.PasswordTableName + ` WHERE email="` + email +
 		`" AND passwordmd5=UNHEX(MD5("` + password + `"))`
