@@ -486,16 +486,18 @@ func authorizeRequest(w http.ResponseWriter, req *http.Request, c_bill_ptr *(bil
 }
 func getCurrentBillEntries(w http.ResponseWriter, req *http.Request) (*(billingappdb.Bill), error) {
 	var c_bill billingappdb.Bill
-	err := decodeJSONBody(w, req, &c_bill)
-	if err != nil {
-		var mr *malformedRequest
-		loggerUtil.Log.Println("Error: validateEmail: POST: Malformed Request: ", err.Error())
-		if errors.As(err, &mr) {
-			err = errors.New("Malformed Json in POST Request")
-		} else {
-			err = errors.New("Malformed Json in POST Request")
+	if (req.Method == http.MethodPost) {
+		err := decodeJSONBody(w, req, &c_bill)
+		if err != nil {
+			var mr *malformedRequest
+			loggerUtil.Log.Println("Error: validateEmail: POST: Malformed Request: ", err.Error())
+			if errors.As(err, &mr) {
+				err = errors.New("Malformed Json in POST Request")
+			} else {
+				err = errors.New("Malformed Json in POST Request")
+			}
+			return &c_bill, err
 		}
-		return &c_bill, err
 	}
 	return &c_bill, nil
 
