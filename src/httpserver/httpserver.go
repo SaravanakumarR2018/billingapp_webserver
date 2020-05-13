@@ -128,6 +128,7 @@ func Init(ip, port, fs_directory, directory_url, RestaurantUrl string, billdb *b
 	loginHandlerUrl := RestaurantUrl + `/login`
 	resetPasswordUrl := RestaurantUrl + `/resetPassword`
 	forgotPasswordUrl := RestaurantUrl + `/forgotPassword`
+	signupUrl := RestaurantUrl + `/signup`
 	loggerUtil.Debugln("Orders ", orders_url, restaurantlist_url, addnewrestaurant_url, loginHandler,
 		resetPasswordUrl, forgotPasswordUrl)
 	http.HandleFunc(orders_url, umbrellaHandler)
@@ -136,6 +137,7 @@ func Init(ip, port, fs_directory, directory_url, RestaurantUrl string, billdb *b
 	http.HandleFunc(loginHandlerUrl, umbrellaHandler)
 	http.HandleFunc(resetPasswordUrl, umbrellaHandler)
 	http.HandleFunc(forgotPasswordUrl, umbrellaHandler)
+	http.HandleFunc(signupUrl, umbrellaHandler)
 	fmt.Printf("Serving %s on HTTP port: %s\n", *directory, *new_port)
 	loggerUtil.Log.Printf("Serving %s on HTTP port: %s\n", *directory, *new_port)
 	log.Fatal(http.ListenAndServe(":"+*new_port, nil))
@@ -148,6 +150,7 @@ func umbrellaHandler(w http.ResponseWriter, req *http.Request) {
 	loginHandlerUrl := RestaurantUrl + `/login`
 	resetPasswordUrl := RestaurantUrl + `/resetPassword`
 	forgotPasswordUrl := RestaurantUrl + `/forgotPassword`
+	signUpUrl := RestaurantUrl + `/signup`
 	add_CORS_headers(w, req)
 	if req.Method == http.MethodOptions {
 		loggerUtil.Debugln("umbrellaHandler: Processing OPTIONS method for CORS", req.URL.Path)
@@ -178,6 +181,11 @@ func umbrellaHandler(w http.ResponseWriter, req *http.Request) {
 		forgotPassword_handler(w, req)
 		return
 	}
+	if req.URL.Path == signUpUrl {
+		signup_handler(w, req)
+		return
+	}
+	
 
 	err = authorizeRequest(w, req, c_bill_ptr, http_current_server.billdb)
 	if err != nil {
@@ -223,6 +231,16 @@ func forgotPassword_handler(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 }
+func signup_handler(w http.ResponseWriter, req *http.Request) {
+	if req.Method == http.MethodGet {
+		loggerUtil.Debugln("signup_handler: Processing GET method", req.URL.Path)
+		login.SignUp(w, req, http_current_server.billdb)
+	} else {
+		loggerUtil.Debugln("signup_handler: Bad Request ", req.URL.Path, req.Method)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+}
+
 func loginHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodGet {
 		loggerUtil.Debugln("loginHandler: Processing GET method", req.URL.Path)

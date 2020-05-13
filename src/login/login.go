@@ -59,10 +59,60 @@ func ChangePassword(w http.ResponseWriter, req *http.Request, billdb *billingapp
 	w.Write(tokenBytes)
 	return
 }
+
+func SignUp(w http.ResponseWriter, req *http.Request, billdb *billingappdb.BillAppDB) {
+	email := req.Header.Get("Email")
+	isPresent, err := billdb.IsEmailPresent(email)
+	if err != nil {
+		loggerUtil.Log.Println("Error: FAILURE: checking email presence in system " + email)
+
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Failure: checking email presence" + email ))
+		return
+	}
+	if isPresent {
+		loggerUtil.Log.Println("ForgotPassword: user should use forgotPassword " + email)
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.Write([]byte("Use Forgot Password Option " + email))
+		return
+	}
+	password := generateNewPassword()
+	err = billdb.ResetPassword(email, "", password, true)
+	if err != nil {
+		loggerUtil.Log.Println("ForgotPassword: Failure to change password for Email: " + email + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("ForgotPassword: Failure to change password for Email:" + email + ": " + err.Error()))
+		return
+	}
+	err = newpasswordsender.SendNewPassword(email, password)
+	if err != nil {
+		loggerUtil.Log.Println("ForgotPassword: FAILURE: Send Email of new Password for " + email)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("ForgotPassword: Failure to send password to Email:" + email + ": " + err.Error()))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	return
+
+}
 func ForgotPassword(w http.ResponseWriter, req *http.Request, billdb *billingappdb.BillAppDB) {
 	email := req.Header.Get("Email")
+	isPresent, err := billdb.IsEmailPresent(email)
+	if err != nil {
+		loggerUtil.Log.Println("Error: FAILURE: checking email presence in system " + email)
+
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Failure: checking email presence" + email ))
+		return
+	}
+	if !isPresent {
+		loggerUtil.Log.Println("ForgotPassword: user should use sign up " + email)
+		w.WriteHeader(http.StatusNoContent)
+		w.Write([]byte("Use Sign Up Option " + email))
+		return
+	}
 	password := generateNewPassword()
-	err := billdb.ResetPassword(email, "", password, true)
+	err = billdb.ResetPassword(email, "", password, true)
 	if err != nil {
 		loggerUtil.Log.Println("ForgotPassword: Failure to change password for Email: " + email + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -101,7 +151,7 @@ func ProcessLoginGetMethod(w http.ResponseWriter, req *http.Request, billdb *bil
 	loggerUtil.Debugln("ProcessLoginGetMethod: Validity of email " + email + " is " + authorizationStatus)
 	if authorizationStatus == billingappdb.EMAILNOEXIST {
 		loggerUtil.Log.Println("processLoginGetMethod: Email does not exist in system: Use Sign Up" + email)
-		w.WriteHeader(http.StatusNotFound)
+		w.WriteHeader(http.StatusNoContent)
 		w.Write([]byte("Use Sign Up button : Email: " + email))
 		return
 	} else if authorizationStatus == billingappdb.EMAILEXISTPASSWORDFAILURE {

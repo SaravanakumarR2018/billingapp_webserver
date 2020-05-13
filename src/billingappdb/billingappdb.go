@@ -676,6 +676,21 @@ func (b *BillAppDB) GetMD5(email string) (string, error) {
 	return md5, nil
 
 }
+func (b *BillAppDB) IsEmailPresent(email string) (bool, error) {
+	query_str := `SELECT email FROM ` + b.PasswordTableName + ` WHERE email="` + email + `"`
+	md5EntryMap, err := b.getQueryJson(query_str)
+	if err != nil {
+		loggerUtil.Log.Println("IsEmailPresent: Error accesssing email from password table " + err.Error())
+		return false, err
+	}
+	if len(md5EntryMap) == 0 {
+		loggerUtil.Log.Println("IsEmailPresent: NOT PRESENT: email " + email)
+		return false, nil
+	}
+	loggerUtil.Log.Println("IsEmailPresent: PRESENT: email " + email)
+	return true, nil
+
+}
 func (b *BillAppDB) VerifyEmailAndPassword(email, password string) (string, error) {
 	query_str := `SELECT email FROM ` + b.PasswordTableName + ` WHERE email="` + email +
 		`" AND passwordmd5=UNHEX(MD5("` + password + `"))`
