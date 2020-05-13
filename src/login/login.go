@@ -3,6 +3,7 @@ package login
 import (
 	"billingappdb"
 	"cryptography"
+	"encoding/json"
 	"errors"
 	"loggerUtil"
 	"math/rand"
@@ -38,15 +39,24 @@ func ChangePassword(w http.ResponseWriter, req *http.Request, billdb *billingapp
 		return
 	}
 	token, err := getToken(email, billdb)
-	cryptography.Encrypt(email)
 	if err != nil {
 		loggerUtil.Log.Println("ChangePassword: acquiring token for login reqest Fail")
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("ResetPassword: acquiring token for login reqest Fail"))
 		return
 	}
-	w.Header().Set("token", token)
+	tokenMap := map[string]string{"token": token}
+
+	tokenBytes, err := json.Marshal(tokenMap)
+	if err != nil {
+		loggerUtil.Log.Println("Error: Converting token string to bytes " + token)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Resetting password: Failed: converting token to bytes: "))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	w.Write(tokenBytes)
 	return
 }
 func ForgotPassword(w http.ResponseWriter, req *http.Request, billdb *billingappdb.BillAppDB) {
@@ -107,6 +117,7 @@ func ProcessLoginGetMethod(w http.ResponseWriter, req *http.Request, billdb *bil
 	} else if authorizationStatus == billingappdb.AUTHORIZATIONSUCCESS {
 		loggerUtil.Log.Println("processLoginGetMethod: Authorization Success email: " + email)
 	}
+
 	token, err := getToken(email, billdb)
 	if err != nil {
 		loggerUtil.Log.Println("processLoginGetMethod: acquiring token for login reqest Fail")
@@ -114,8 +125,17 @@ func ProcessLoginGetMethod(w http.ResponseWriter, req *http.Request, billdb *bil
 		w.Write([]byte("acquiring token for login reqest Fail"))
 		return
 	}
-	w.Header().Set("token", token)
+	tokenMap := map[string]string{"token": token}
+	tokenBytes, err := json.Marshal(tokenMap)
+	if err != nil {
+		loggerUtil.Log.Println("ProcessLoginGetMethod: Error: Converting token string to bytes " + token)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Failed: converting token to bytes while logging in: "))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	w.Write(tokenBytes)
 
 }
 
