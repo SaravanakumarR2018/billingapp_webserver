@@ -660,7 +660,7 @@ const (
 func (b *BillAppDB) GetMD5(email string) (string, error) {
 	passwordmd5 := "passwordmd5"
 	var md5 string
-	query_str := `SELECT ` + passwordmd5 + ` FROM ` + b.PasswordTableName + ` WHERE email="` + email + `"`
+	query_str := `SELECT BIN_TO_UUID(` + passwordmd5 + `) as ` + passwordmd5 + ` FROM ` + b.PasswordTableName + ` WHERE email="` + email + `"`
 	md5EntryMap, err := b.getQueryJson(query_str)
 	if err != nil {
 		loggerUtil.Log.Println("GetMD5: Error Obtaining md5 entry from password Table: ", query_str, err.Error())
