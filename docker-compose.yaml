@@ -27,3 +27,4 @@ services:
             - DB_BILLINGAPP_PASSWORD=root
         ports:
             - "80:80"
+            - "443:443"
