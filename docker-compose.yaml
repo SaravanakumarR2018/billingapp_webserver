@@ -20,6 +20,7 @@ services:
             - /var/www/html:/var/www/html
             - /billingapp/logs:/root
             - /billingapp/credentials:/root/credentials
+            - /billingapp/certificate:/root/certificate
         environment:
             - DB_BILLINGAPP_HOST=database
             - DB_BILLINGAPP_USER=root

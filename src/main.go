@@ -44,6 +44,7 @@ func main() {
 		loggerUtil.Log.Println("NOT SET: DB_BILLINGAPP_PORT environmental variable: Default value: 3306 taken")
 		billingappdb_port = "3306"
 	}
+
 	dbuser_env := "DB_BILLINGAPP_USER"
 	billingappdb_user, ok := os.LookupEnv(dbuser_env)
 	if !ok {
@@ -69,6 +70,14 @@ func main() {
 		loggerUtil.Log.Println("NOT SET: HTTP_BILLINGAPP_PORT environmental variable: Default 80 taken")
 		billingapphttp_port = "80"
 	}
+
+	https_serverport_env := "HTTPS_BILLINGAPP_PORT"
+	billingapphttps_port, ok := os.LookupEnv(https_serverport_env)
+	if !ok {
+		loggerUtil.Log.Println("NOT SET: HTTPS_BILLINGAPP_PORT environmental variable: Default 443 taken")
+		billingapphttps_port = "443"
+	}
+
 	httpserverdir_env := "HTTP_BILLINGAPP_DIR"
 	billingapphttp_dir, ok := os.LookupEnv(httpserverdir_env)
 	if !ok {
@@ -82,7 +91,7 @@ func main() {
 		return
 	}
 	loggerUtil.Log.Println("Billing app DB Init done")
-	httpserver.Init(billingapphttp_ip, billingapphttp_port, billingapphttp_dir, "/", "/restaurant", &bappdb)
+	httpserver.Init(billingapphttp_ip, billingapphttp_port, billingapphttps_port, billingapphttp_dir, "/", "/restaurant", &bappdb)
 	bappdb.Close()
 
 }

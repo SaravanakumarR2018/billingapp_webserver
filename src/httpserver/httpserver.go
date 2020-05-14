@@ -11,6 +11,7 @@ import (
 	"loggerUtil"
 	"login"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 
@@ -100,6 +101,7 @@ type FileSystem struct {
 type httpServer struct {
 	ip            string
 	port          string
+	httpsPort     string
 	fs_directory  string
 	directory_url string
 	RestaurantUrl string
@@ -108,16 +110,19 @@ type httpServer struct {
 
 var http_current_server httpServer
 
-func Init(ip, port, fs_directory, directory_url, RestaurantUrl string, billdb *billingappdb.BillAppDB) {
+func Init(ip, port, httpsPort, fs_directory, directory_url, RestaurantUrl string, billdb *billingappdb.BillAppDB) {
 	http_current_server = httpServer{
 		ip:            ip,
 		port:          port,
+		httpsPort:     httpsPort,
 		fs_directory:  fs_directory,
 		directory_url: directory_url,
 		RestaurantUrl: RestaurantUrl,
 		billdb:        billdb,
 	}
+
 	new_port := flag.String("p", port, "port to serve on")
+	new_https_port := flag.String("sp", httpsPort, "HTTPs port to serve on")
 	directory := flag.String("d", fs_directory, "the directory of static file to host")
 	flag.Parse()
 	fileServer := http.FileServer(FileSystem{http.Dir(*directory)})
@@ -138,9 +143,33 @@ func Init(ip, port, fs_directory, directory_url, RestaurantUrl string, billdb *b
 	http.HandleFunc(resetPasswordUrl, umbrellaHandler)
 	http.HandleFunc(forgotPasswordUrl, umbrellaHandler)
 	http.HandleFunc(signupUrl, umbrellaHandler)
+
+	keypemFile, certpemFile := getCertificateFiles()
+	if keypemFile == "" || certpemFile == "" {
+		loggerUtil.Log.Fatal("Certificate files missing: Exiting")
+		log.Fatal("Certificate files missing: Exiting")
+	}
+	go HTTPServer(directory, new_port)
+	fmt.Printf("Serving %s on HTTPs port: %s\n", *directory, *new_https_port)
+	loggerUtil.Log.Printf("Serving %s on HTTPs port: %s\n", *directory, *new_https_port)
+	log.Fatal(http.ListenAndServeTLS(":"+*new_https_port, certpemFile, keypemFile, nil))
+}
+
+func redirect(w http.ResponseWriter, req *http.Request) {
+	target := "https://" + req.Host + req.URL.Path
+	if len(req.URL.RawQuery) > 0 {
+		target += "?" + req.URL.RawQuery
+	}
+	loggerUtil.Log.Printf("redirect to: %s\n", target)
+	http.Redirect(w, req, target,
+		// see comments below and consider the codes 308, 302, or 301
+		http.StatusPermanentRedirect)
+}
+
+func HTTPServer(directory, new_port *string) {
 	fmt.Printf("Serving %s on HTTP port: %s\n", *directory, *new_port)
 	loggerUtil.Log.Printf("Serving %s on HTTP port: %s\n", *directory, *new_port)
-	log.Fatal(http.ListenAndServe(":"+*new_port, nil))
+	log.Fatal(http.ListenAndServe(":"+*new_port, http.HandlerFunc(redirect)))
 }
 func umbrellaHandler(w http.ResponseWriter, req *http.Request) {
 	RestaurantUrl := http_current_server.RestaurantUrl
@@ -185,7 +214,6 @@ func umbrellaHandler(w http.ResponseWriter, req *http.Request) {
 		signup_handler(w, req)
 		return
 	}
-	
 
 	err = authorizeRequest(w, req, c_bill_ptr, http_current_server.billdb)
 	if err != nil {
@@ -504,7 +532,7 @@ func authorizeRequest(w http.ResponseWriter, req *http.Request, c_bill_ptr *(bil
 }
 func getCurrentBillEntries(w http.ResponseWriter, req *http.Request) (*(billingappdb.Bill), error) {
 	var c_bill billingappdb.Bill
-	if (req.Method == http.MethodPost) {
+	if req.Method == http.MethodPost {
 		err := decodeJSONBody(w, req, &c_bill)
 		if err != nil {
 			var mr *malformedRequest
@@ -518,5 +546,35 @@ func getCurrentBillEntries(w http.ResponseWriter, req *http.Request) (*(billinga
 		}
 	}
 	return &c_bill, nil
+
+}
+func getCertificateFiles() (string, string) {
+	home_env := `HOME`
+	home, ok := os.LookupEnv(home_env)
+	if !ok {
+		loggerUtil.Log.Println(home_env + ": NOT SET: Proceeding with /root as home")
+		home = `/root`
+	}
+	certificateDir := home + `/certificate/`
+	keypemFile := certificateDir + `key.pem`
+	certpemFile := certificateDir + `cert.pem`
+	file, err := os.Open(keypemFile)
+	errStr := ""
+	if err != nil {
+		errStr += "Cannot open file: " + keypemFile + " "
+	}
+	file.Close()
+	file, err = os.Open(certpemFile)
+	if err != nil {
+		errStr += "Cannot open file: " + certpemFile
+	}
+	file.Close()
+	if errStr != "" {
+		fmt.Println(errStr)
+		loggerUtil.Log.Println(errStr)
+		return "", ""
+	}
+	loggerUtil.Log.Println("Certificate Files: " + keypemFile + " " + certpemFile)
+	return keypemFile, certpemFile
 
 }
