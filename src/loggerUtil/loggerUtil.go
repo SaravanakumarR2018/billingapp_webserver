@@ -19,7 +19,15 @@ var (
 
 func SetDebug(d bool) {
 	debug = d
-	Log.Println("DEBUG LOGGING: ", d)
+	Log.Println("SET DEBUG LOGGING: ", d)
+}
+func GetDebug() bool {
+	Debugln("GET DEBUG LOGGING: ", debug)
+	return debug
+}
+func ToggleDebug() {
+	debug = !debug
+	Log.Println("Toggle Debug New Value: ", debug)
 }
 
 func InitLog(filename string) {

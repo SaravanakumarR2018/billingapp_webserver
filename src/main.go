@@ -12,7 +12,6 @@ import (
 
 func main() {
 	loggerUtil.InitLog("billingapp.log")
-	loggerUtil.SetDebug(true)
 	loggerUtil.Log.Println("Billingapp first log")
 	cred, err := credentials.GetCredentials()
 	if err != nil {

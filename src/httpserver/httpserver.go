@@ -11,6 +11,7 @@ import (
 	"loggerUtil"
 	"login"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"regexp"
 	"strings"
@@ -19,7 +20,11 @@ import (
 )
 
 const (
-	Email string = "^(((([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+(\\.([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+)*)|((\\x22)((((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(([\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]|\\x21|[\\x23-\\x5b]|[\\x5d-\\x7e]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(\\([\\x01-\\x09\\x0b\\x0c\\x0d-\\x7f]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}]))))*(((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(\\x22)))@((([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|\\.|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.)+(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.?$"
+	Email               string = "^(((([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+(\\.([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+)*)|((\\x22)((((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(([\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]|\\x21|[\\x23-\\x5b]|[\\x5d-\\x7e]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(\\([\\x01-\\x09\\x0b\\x0c\\x0d-\\x7f]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}]))))*(((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(\\x22)))@((([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|\\.|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.)+(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.?$"
+	emailHeader                = "Email"
+	authorizationHeader        = "Authorization"
+	ContentType                = "Content-type"
+	RestaurantName             = "RestaurantName"
 )
 
 var (
@@ -99,26 +104,42 @@ type FileSystem struct {
 	fs http.FileSystem
 }
 type httpServer struct {
-	ip            string
-	port          string
-	httpsPort     string
-	fs_directory  string
-	directory_url string
-	RestaurantUrl string
-	billdb        *billingappdb.BillAppDB
+	ip                   string
+	port                 string
+	httpsPort            string
+	fs_directory         string
+	directory_url        string
+	RestaurantUrl        string
+	billdb               *billingappdb.BillAppDB
+	orders_url           string
+	restaurantlist_url   string
+	addnewrestaurant_url string
+	loginHandlerUrl      string
+	resetPasswordUrl     string
+	forgotPasswordUrl    string
+	signupUrl            string
+	debugUrl             string
 }
 
 var http_current_server httpServer
 
 func Init(ip, port, httpsPort, fs_directory, directory_url, RestaurantUrl string, billdb *billingappdb.BillAppDB) {
 	http_current_server = httpServer{
-		ip:            ip,
-		port:          port,
-		httpsPort:     httpsPort,
-		fs_directory:  fs_directory,
-		directory_url: directory_url,
-		RestaurantUrl: RestaurantUrl,
-		billdb:        billdb,
+		ip:                   ip,
+		port:                 port,
+		httpsPort:            httpsPort,
+		fs_directory:         fs_directory,
+		directory_url:        directory_url,
+		RestaurantUrl:        RestaurantUrl,
+		billdb:               billdb,
+		orders_url:           RestaurantUrl + `/orders`,
+		restaurantlist_url:   RestaurantUrl + `/restaurantlist`,
+		addnewrestaurant_url: RestaurantUrl + `/addnewrestaurant`,
+		loginHandlerUrl:      RestaurantUrl + `/login`,
+		resetPasswordUrl:     RestaurantUrl + `/resetPassword`,
+		forgotPasswordUrl:    RestaurantUrl + `/forgotPassword`,
+		signupUrl:            RestaurantUrl + `/signup`,
+		debugUrl:             RestaurantUrl + `/debug`,
 	}
 
 	new_port := flag.String("p", port, "port to serve on")
@@ -127,22 +148,24 @@ func Init(ip, port, httpsPort, fs_directory, directory_url, RestaurantUrl string
 	flag.Parse()
 	fileServer := http.FileServer(FileSystem{http.Dir(*directory)})
 	http.Handle(directory_url, http.StripPrefix(strings.TrimRight(directory_url, directory_url), fileServer))
-	orders_url := RestaurantUrl + `/orders`
-	restaurantlist_url := RestaurantUrl + `/restaurantlist`
-	addnewrestaurant_url := RestaurantUrl + `/addnewrestaurant`
-	loginHandlerUrl := RestaurantUrl + `/login`
-	resetPasswordUrl := RestaurantUrl + `/resetPassword`
-	forgotPasswordUrl := RestaurantUrl + `/forgotPassword`
-	signupUrl := RestaurantUrl + `/signup`
+	orders_url := http_current_server.orders_url
+	restaurantlist_url := http_current_server.restaurantlist_url
+	addnewrestaurant_url := http_current_server.addnewrestaurant_url
+	loginHandlerUrl := http_current_server.loginHandlerUrl
+	resetPasswordUrl := http_current_server.resetPasswordUrl
+	forgotPasswordUrl := http_current_server.forgotPasswordUrl
+	signUpUrl := http_current_server.signupUrl
+	debugUrl := http_current_server.debugUrl
 	loggerUtil.Debugln("Orders ", orders_url, restaurantlist_url, addnewrestaurant_url, loginHandler,
-		resetPasswordUrl, forgotPasswordUrl)
+		resetPasswordUrl, forgotPasswordUrl, signUpUrl)
 	http.HandleFunc(orders_url, umbrellaHandler)
 	http.HandleFunc(restaurantlist_url, umbrellaHandler)
 	http.HandleFunc(addnewrestaurant_url, umbrellaHandler)
 	http.HandleFunc(loginHandlerUrl, umbrellaHandler)
 	http.HandleFunc(resetPasswordUrl, umbrellaHandler)
 	http.HandleFunc(forgotPasswordUrl, umbrellaHandler)
-	http.HandleFunc(signupUrl, umbrellaHandler)
+	http.HandleFunc(signUpUrl, umbrellaHandler)
+	http.HandleFunc(debugUrl, umbrellaHandler)
 
 	keypemFile, certpemFile := getCertificateFiles()
 	if keypemFile == "" || certpemFile == "" {
@@ -172,14 +195,18 @@ func HTTPServer(directory, new_port *string) {
 	log.Fatal(http.ListenAndServe(":"+*new_port, http.HandlerFunc(redirect)))
 }
 func umbrellaHandler(w http.ResponseWriter, req *http.Request) {
-	RestaurantUrl := http_current_server.RestaurantUrl
-	orders_url := RestaurantUrl + `/orders`
-	restaurantlist_url := RestaurantUrl + `/restaurantlist`
-	addnewrestaurant_url := RestaurantUrl + `/addnewrestaurant`
-	loginHandlerUrl := RestaurantUrl + `/login`
-	resetPasswordUrl := RestaurantUrl + `/resetPassword`
-	forgotPasswordUrl := RestaurantUrl + `/forgotPassword`
-	signUpUrl := RestaurantUrl + `/signup`
+
+	orders_url := http_current_server.orders_url
+	restaurantlist_url := http_current_server.restaurantlist_url
+	addnewrestaurant_url := http_current_server.addnewrestaurant_url
+	loginHandlerUrl := http_current_server.loginHandlerUrl
+	resetPasswordUrl := http_current_server.resetPasswordUrl
+	forgotPasswordUrl := http_current_server.forgotPasswordUrl
+	signUpUrl := http_current_server.signupUrl
+	debugUrl := http_current_server.debugUrl
+	if loggerUtil.GetDebug() {
+		httpHandleDumpRequest(req)
+	}
 	add_CORS_headers(w, req)
 	if req.Method == http.MethodOptions {
 		loggerUtil.Debugln("umbrellaHandler: Processing OPTIONS method for CORS", req.URL.Path)
@@ -193,6 +220,7 @@ func umbrellaHandler(w http.ResponseWriter, req *http.Request) {
 		w.Write([]byte("Malformed Request: should be a json"))
 		return
 	}
+	loggerUtil.Debugln(c_bill_ptr)
 	err = validateEmail(w, req, c_bill_ptr)
 	if err != nil {
 		loggerUtil.Log.Println("umbrellaHandler: Error: Validating and Converting Email fields " + err.Error())
@@ -234,6 +262,9 @@ func umbrellaHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	} else if req.URL.Path == resetPasswordUrl {
 		resetPassword_handler(w, req)
+		return
+	} else if req.URL.Path == debugUrl {
+		debug_handler(w, req)
 		return
 	} else {
 		loggerUtil.Debugln("Bad request url ", req.URL.Path)
@@ -279,7 +310,15 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 }
-
+func debug_handler(w http.ResponseWriter, req *http.Request) {
+	if req.Method == http.MethodGet {
+		loggerUtil.Debugln("debug_handler: Processing GET method", req.URL.Path)
+		debugGetMethod(w, req)
+	} else {
+		loggerUtil.Debugln("debug_handler: Bad Request", req.URL.Path, req.Method)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+}
 func addnewrestaurant_handler(w http.ResponseWriter, req *http.Request, c_bill_ptr *(billingappdb.Bill)) {
 	if req.Method == http.MethodPost {
 		loggerUtil.Debugln("addnewrestaurant_handler: Processing POST method", req.URL.Path)
@@ -323,7 +362,7 @@ func orders_handler(w http.ResponseWriter, req *http.Request, c_bill_ptr *(billi
 	}
 }
 func processAddNewRestaurantMethod(w http.ResponseWriter, req *http.Request, c_bill_ptr *(billingappdb.Bill)) {
-	content_type := req.Header.Get("Content-type")
+	content_type := req.Header.Get(ContentType)
 	if !strings.Contains(content_type, `application/json`) {
 		loggerUtil.Log.Println("Error: processAddNewRestaurantMethod: POST: The post operation should contain json data")
 		w.WriteHeader(http.StatusBadRequest)
@@ -342,7 +381,7 @@ func processAddNewRestaurantMethod(w http.ResponseWriter, req *http.Request, c_b
 
 }
 func processPOSTMethod(w http.ResponseWriter, req *http.Request, c_bill_ptr *(billingappdb.Bill)) {
-	content_type := req.Header.Get("Content-type")
+	content_type := req.Header.Get(ContentType)
 	if !strings.Contains(content_type, `application/json`) {
 		loggerUtil.Log.Println("Error: POST: The post operation should contain json data")
 		w.WriteHeader(http.StatusBadRequest)
@@ -365,7 +404,7 @@ func processPOSTMethod(w http.ResponseWriter, req *http.Request, c_bill_ptr *(bi
 }
 func processRstrntListGETMethod(w http.ResponseWriter, req *http.Request) {
 	loggerUtil.Debugln("Correct Request URL ", req.URL.Path)
-	email := req.Header.Get("Email")
+	email := req.Header.Get(emailHeader)
 	var NO_EMAIL string
 	if email == NO_EMAIL {
 		loggerUtil.Log.Println("Email not present in header for the requested URL", req.URL.Path, email)
@@ -398,14 +437,14 @@ func processGETMethod(w http.ResponseWriter, req *http.Request) {
 
 	loggerUtil.Debugln("Correct Request URL ", req.URL.Path)
 
-	email := req.Header.Get("Email")
+	email := req.Header.Get(emailHeader)
 	var NO_EMAIL string
 	if email == NO_EMAIL {
 		loggerUtil.Log.Println("Email not present in header for the requested URL", req.URL.Path, email)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	restaurant_name := req.Header.Get("RestaurantName")
+	restaurant_name := req.Header.Get(RestaurantName)
 	var NO_RESTAURANTNAME string
 	if restaurant_name == NO_RESTAURANTNAME {
 		loggerUtil.Log.Println("RestaurantName not present in header for the requested URL", req.URL.Path, restaurant_name)
@@ -460,9 +499,9 @@ func isValidEmail(email string) bool {
 	return rxEmail.MatchString(email)
 }
 func validateEmail(w http.ResponseWriter, req *http.Request, c_bill_ptr *billingappdb.Bill) error {
-	emailHeader := "Email"
 	if req.Method == http.MethodGet {
 		email := req.Header.Get(emailHeader)
+		loggerUtil.Debugln("validateEmail: Email is " + email)
 		var NO_EMAIL string
 		if email == NO_EMAIL {
 			loggerUtil.Log.Println("validateEmail: Email not present in header for the requested URL", req.URL.Path, email)
@@ -498,8 +537,7 @@ func validateEmail(w http.ResponseWriter, req *http.Request, c_bill_ptr *billing
 }
 
 func authorizeRequest(w http.ResponseWriter, req *http.Request, c_bill_ptr *(billingappdb.Bill), billDb *billingappdb.BillAppDB) error {
-	emailHeader := "Email"
-	authorizationHeader := "Authorization"
+
 	token := req.Header.Get(authorizationHeader)
 	var email string
 	var NOTOKEN string
@@ -577,4 +615,29 @@ func getCertificateFiles() (string, string) {
 	loggerUtil.Log.Println("Certificate Files: " + keypemFile + " " + certpemFile)
 	return keypemFile, certpemFile
 
+}
+
+func httpHandleDumpRequest(req *http.Request) {
+
+	dump, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		loggerUtil.Log.Println("httpHandleDumpRequest: Dump Request Failed")
+		return
+	}
+	loggerUtil.Log.Printf(string(dump))
+
+}
+
+func debugGetMethod(w http.ResponseWriter, req *http.Request) {
+	email := req.Header.Get(emailHeader)
+	loggerUtil.Log.Println("debugGetMethod: Debug request for " + email)
+	if email != `saravana.k.r@gmail.com` {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Wrong Email"))
+	} else {
+		loggerUtil.ToggleDebug()
+		loggerUtil.Log.Println("debugGetMethod: Debug set to ", loggerUtil.GetDebug())
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Debug Enabled: " + fmt.Sprintf("%v", loggerUtil.GetDebug())))
+	}
 }
