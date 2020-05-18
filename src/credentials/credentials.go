@@ -3,9 +3,9 @@ package credentials
 import (
 	"encoding/json"
 	"errors"
+	"homedir"
 	"io/ioutil"
 	"loggerUtil"
-	"os"
 	"sync"
 )
 
@@ -24,6 +24,7 @@ type Credentials struct {
 	Password     string
 	SmtpServer   string
 	TokenAuthKey string
+	Domains      []string
 }
 
 func GetCredentials() (Credentials, error) {
@@ -34,22 +35,22 @@ func GetCredentials() (Credentials, error) {
 	}
 	return cred, nil
 }
+func GetCredentialsDir() string {
+	credDir := homedir.GetHomeDir() + `/credentials/`
+	loggerUtil.Debugln("GetCredentialsDir: Credentials Dir: " + credDir)
+	return credDir
+
+}
 func fillCredentials() {
 	globalErr = errors.New("fillCredentials: Begin Error")
-	home_env := `HOME`
-	home, ok := os.LookupEnv(home_env)
-	if !ok {
-		loggerUtil.Log.Println(home_env + ": NOT SET: Proceeding with /root as home")
-		home = `/root`
-	}
-	credentialdir := home + `/credentials/`
+	credentialdir := GetCredentialsDir()
 	credentailsFileBytes, err := ioutil.ReadFile(credentialdir + CredentialFileName)
 	if err != nil {
 		loggerUtil.Log.Println("getCredentials: Error: Opening file: " + CredentialFileName + " " + err.Error())
 		globalErr = err
 		return
 	}
-
+	loggerUtil.Log.Println("fillCredentials: Credential File " + credentialdir + CredentialFileName)
 	err = json.Unmarshal(credentailsFileBytes, &cred)
 	if err != nil {
 		loggerUtil.Log.Println("getCredentials: Error: json Unmarshalling error" + err.Error())
@@ -75,6 +76,11 @@ func fillCredentials() {
 	if cred.TokenAuthKey == "" {
 		loggerUtil.Log.Println("getCredentials: Error: TokenAuthKey field Empty")
 		globalErr = errors.New("TokenAuthKey Credentails empty")
+		return
+	}
+	if len(cred.Domains) == 0 {
+		loggerUtil.Log.Println("getCredentials: Error: Domain field Empty")
+		globalErr = errors.New("Domain names within Credential file empty")
 		return
 	}
 	loggerUtil.Log.Println("getCredentials: All Fields present: SUCCESS ")

@@ -2,6 +2,8 @@ package httpserver
 
 import (
 	"billingappdb"
+	"credentials"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -12,11 +14,11 @@ import (
 	"login"
 	"net/http"
 	"net/http/httputil"
-	"os"
 	"regexp"
 	"strings"
 
 	"github.com/golang/gddo/httputil/header"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 const (
@@ -166,16 +168,39 @@ func Init(ip, port, httpsPort, fs_directory, directory_url, RestaurantUrl string
 	http.HandleFunc(forgotPasswordUrl, umbrellaHandler)
 	http.HandleFunc(signUpUrl, umbrellaHandler)
 	http.HandleFunc(debugUrl, umbrellaHandler)
-
-	keypemFile, certpemFile := getCertificateFiles()
-	if keypemFile == "" || certpemFile == "" {
-		loggerUtil.Log.Fatal("Certificate files missing: Exiting")
-		log.Fatal("Certificate files missing: Exiting")
+	cred, err := credentials.GetCredentials()
+	if err != nil {
+		loggerUtil.Log.Println("Init: Getting Credentails failed: " + err.Error())
+		log.Fatal("Init: Getting Credentails failed: " + err.Error() + "Exiting")
 	}
-	go HTTPServer(directory, new_port)
-	fmt.Printf("Serving %s on HTTPs port: %s\n", *directory, *new_https_port)
-	loggerUtil.Log.Printf("Serving %s on HTTPs port: %s\n", *directory, *new_https_port)
-	log.Fatal(http.ListenAndServeTLS(":"+*new_https_port, certpemFile, keypemFile, nil))
+
+	domains := cred.Domains
+	// create the autocert.Manager with domains and path to the cache
+	certManager := autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist(domains...),
+	}
+	certDir := credentials.GetCredentialsDir()
+	certManager.Cache = autocert.DirCache(certDir)
+
+	// create the server itself
+	server := &http.Server{
+		Addr: ":" + *new_https_port,
+		TLSConfig: &tls.Config{
+			GetCertificate: certManager.GetCertificate,
+		},
+	}
+
+	go func() {
+		// serve HTTP, which will redirect automatically to HTTPS
+		h := certManager.HTTPHandler(nil)
+		fmt.Println("Serving HTTP on %v for domain %v", *new_port, domains)
+		loggerUtil.Log.Println("Serving HTTP on %v for domain %v", *new_port, domains)
+		log.Fatal(http.ListenAndServe(":"+*new_port, h))
+	}()
+	fmt.Println("Serving HTTPs on %v for Domains %v ", *new_https_port, domains)
+	loggerUtil.Log.Println("Serving HTTPs on %v for Domains %v ", *new_https_port, domains)
+	log.Fatal(server.ListenAndServeTLS("", ""))
 }
 
 func redirect(w http.ResponseWriter, req *http.Request) {
@@ -584,36 +609,6 @@ func getCurrentBillEntries(w http.ResponseWriter, req *http.Request) (*(billinga
 		}
 	}
 	return &c_bill, nil
-
-}
-func getCertificateFiles() (string, string) {
-	home_env := `HOME`
-	home, ok := os.LookupEnv(home_env)
-	if !ok {
-		loggerUtil.Log.Println(home_env + ": NOT SET: Proceeding with /root as home")
-		home = `/root`
-	}
-	certificateDir := home + `/certificate/`
-	keypemFile := certificateDir + `key.pem`
-	certpemFile := certificateDir + `cert.pem`
-	file, err := os.Open(keypemFile)
-	errStr := ""
-	if err != nil {
-		errStr += "Cannot open file: " + keypemFile + " "
-	}
-	file.Close()
-	file, err = os.Open(certpemFile)
-	if err != nil {
-		errStr += "Cannot open file: " + certpemFile
-	}
-	file.Close()
-	if errStr != "" {
-		fmt.Println(errStr)
-		loggerUtil.Log.Println(errStr)
-		return "", ""
-	}
-	loggerUtil.Log.Println("Certificate Files: " + keypemFile + " " + certpemFile)
-	return keypemFile, certpemFile
 
 }
 
