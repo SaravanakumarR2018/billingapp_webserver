@@ -5,7 +5,9 @@ import (
 	"errors"
 	"homedir"
 	"io/ioutil"
+	"log"
 	"loggerUtil"
+	"os"
 	"sync"
 )
 
@@ -51,6 +53,28 @@ func fillCredentials() {
 		return
 	}
 	loggerUtil.Log.Println("fillCredentials: Credential File " + credentialdir + CredentialFileName)
+
+	dummyFileCheckPermission := credentialdir + "dummyFile.txt"
+	loggerUtil.Log.Println("fillCredentials: Check file exists: " + dummyFileCheckPermission)
+	_, err = os.Stat(dummyFileCheckPermission)
+	if err == nil {
+		loggerUtil.Log.Println("fillCredentials: File exists:removing file " + dummyFileCheckPermission)
+		err = os.Remove(dummyFileCheckPermission)
+		if err != nil {
+			loggerUtil.Log.Println("Write permission denied: Cannot delete file " + dummyFileCheckPermission + " " + err.Error())
+			log.Fatalln("Write permission denied: Cannot delete file " + dummyFileCheckPermission + " " + err.Error())
+		}
+	} else {
+		loggerUtil.Log.Println("fillCredentials: File does not exists: " + dummyFileCheckPermission)
+	}
+	loggerUtil.Log.Println("fillCredentials: creating file " + dummyFileCheckPermission)
+	file, err := os.Create(dummyFileCheckPermission)
+	file.Write([]byte("Checking permissions"))
+	if err != nil {
+		loggerUtil.Log.Println("Write Permission: Not available " + credentialdir + " " + err.Error())
+		log.Fatal("Write Permission: Not available " + credentialdir + " " + err.Error())
+	}
+	file.Close()
 	err = json.Unmarshal(credentailsFileBytes, &cred)
 	if err != nil {
 		loggerUtil.Log.Println("getCredentials: Error: json Unmarshalling error" + err.Error())
