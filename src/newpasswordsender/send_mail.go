@@ -57,7 +57,6 @@ func (sender Sender) WriteEmail(dest []string, contentType, subject, bodyMessage
 	}
 
 	header["To"] = receipient
-	header["Subject"] = subject
 	header["MIME-Version"] = "1.0"
 	header["Content-Type"] = fmt.Sprintf("%s; charset=\"utf-8\"", contentType)
 	header["Content-Transfer-Encoding"] = "quoted-printable"
