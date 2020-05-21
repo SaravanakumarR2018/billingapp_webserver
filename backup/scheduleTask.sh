@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
-apt -y update; apt -y upgrade
-apt install -y mysql-client
-apt install -y python3
-apt install -y zip
-apt install -y python3-pip
+apt-get -y update; apt-get -y upgrade
+apt-get install -y mysql-client
+apt-get install -y python3
+apt-get install -y zip
+apt-get install -y python3-pip
 pip3 install pydrive
 cd "$(dirname "$0")"
 echo "MYSQL dump Started"

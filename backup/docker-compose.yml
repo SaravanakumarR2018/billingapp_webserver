@@ -16,5 +16,5 @@ services:
             - "api-db:database"
         entrypoint: ["/root/entry.sh"]
         volumes:
-            - ~/goauth/:/root
+            - .:/root
         

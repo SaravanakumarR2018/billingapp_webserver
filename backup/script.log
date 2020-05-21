@@ -1,383 +1,0 @@
-
-WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
-
-Get:1 http://security.ubuntu.com/ubuntu focal-security InRelease [107 kB]
-Get:2 http://archive.ubuntu.com/ubuntu focal InRelease [265 kB]
-Get:3 http://archive.ubuntu.com/ubuntu focal-updates InRelease [107 kB]
-Get:4 http://security.ubuntu.com/ubuntu focal-security/universe amd64 Packages [33.3 kB]
-Get:5 http://security.ubuntu.com/ubuntu focal-security/restricted amd64 Packages [8685 B]
-Get:6 http://archive.ubuntu.com/ubuntu focal-backports InRelease [98.3 kB]
-Get:7 http://archive.ubuntu.com/ubuntu focal/restricted amd64 Packages [33.4 kB]
-Get:8 http://security.ubuntu.com/ubuntu focal-security/multiverse amd64 Packages [1079 B]
-Get:9 http://archive.ubuntu.com/ubuntu focal/universe amd64 Packages [11.3 MB]
-Get:10 http://security.ubuntu.com/ubuntu focal-security/main amd64 Packages [87.8 kB]
-Get:11 http://archive.ubuntu.com/ubuntu focal/main amd64 Packages [1275 kB]
-Get:12 http://archive.ubuntu.com/ubuntu focal/multiverse amd64 Packages [177 kB]
-Get:13 http://archive.ubuntu.com/ubuntu focal-updates/multiverse amd64 Packages [1079 B]
-Get:14 http://archive.ubuntu.com/ubuntu focal-updates/restricted amd64 Packages [8685 B]
-Get:15 http://archive.ubuntu.com/ubuntu focal-updates/universe amd64 Packages [67.3 kB]
-Get:16 http://archive.ubuntu.com/ubuntu focal-updates/main amd64 Packages [148 kB]
-Get:17 http://archive.ubuntu.com/ubuntu focal-backports/universe amd64 Packages [2903 B]
-Fetched 13.8 MB in 8s (1658 kB/s)
-Reading package lists...
-Building dependency tree...
-Reading state information...
-2 packages can be upgraded. Run 'apt list --upgradable' to see them.
-
-WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
-
-Reading package lists...
-Building dependency tree...
-Reading state information...
-Calculating upgrade...
-The following packages will be upgraded:
-  apt libapt-pkg6.0
-2 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
-Need to get 2122 kB of archives.
-After this operation, 6144 B disk space will be freed.
-Get:1 http://archive.ubuntu.com/ubuntu focal-updates/main amd64 libapt-pkg6.0 amd64 2.0.2ubuntu0.1 [832 kB]
-Get:2 http://archive.ubuntu.com/ubuntu focal-updates/main amd64 apt amd64 2.0.2ubuntu0.1 [1290 kB]
-debconf: delaying package configuration, since apt-utils is not installed
-Fetched 2122 kB in 1s (1849 kB/s)
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 4122 files and directories currently installed.)
-Preparing to unpack .../libapt-pkg6.0_2.0.2ubuntu0.1_amd64.deb ...
-Unpacking libapt-pkg6.0:amd64 (2.0.2ubuntu0.1) over (2.0.2) ...
-Setting up libapt-pkg6.0:amd64 (2.0.2ubuntu0.1) ...
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 4122 files and directories currently installed.)
-Preparing to unpack .../apt_2.0.2ubuntu0.1_amd64.deb ...
-Unpacking apt (2.0.2ubuntu0.1) over (2.0.2) ...
-Setting up apt (2.0.2ubuntu0.1) ...
-Processing triggers for libc-bin (2.31-0ubuntu9) ...
-
-WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
-
-Reading package lists...
-Building dependency tree...
-Reading state information...
-Suggested packages:
-  anacron logrotate checksecurity default-mta | mail-transport-agent
-The following NEW packages will be installed:
-  cron
-0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
-Need to get 71.5 kB of archives.
-After this operation, 268 kB of additional disk space will be used.
-Get:1 http://archive.ubuntu.com/ubuntu focal/main amd64 cron amd64 3.0pl1-136ubuntu1 [71.5 kB]
-debconf: delaying package configuration, since apt-utils is not installed
-Fetched 71.5 kB in 0s (215 kB/s)
-Selecting previously unselected package cron.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 4122 files and directories currently installed.)
-Preparing to unpack .../cron_3.0pl1-136ubuntu1_amd64.deb ...
-Unpacking cron (3.0pl1-136ubuntu1) ...
-Setting up cron (3.0pl1-136ubuntu1) ...
-Adding group `crontab' (GID 101) ...
-Done.
-invoke-rc.d: could not determine current runlevel
-invoke-rc.d: policy-rc.d denied execution of start.
- * Starting periodic command scheduler cron
-   ...done.
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.1G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.1G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.1G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.1G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.1G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   65G  70% /root
-/dev/vda1        59G  5.1G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.2G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   65G  70% /root
-/dev/vda1        59G  5.2G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.2G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   65G  70% /root
-/dev/vda1        59G  5.2G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.2G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.2G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   67G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   65G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   65G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   65G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   65G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   65G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   65G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   65G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   65G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   65G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   65G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   65G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   65G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
-Filesystem      Size  Used Avail Use% Mounted on
-overlay          59G  5.4G   51G  10% /
-tmpfs            64M     0   64M   0% /dev
-tmpfs           996M     0  996M   0% /sys/fs/cgroup
-osxfs           234G  150G   66G  70% /root
-/dev/vda1        59G  5.4G   51G  10% /etc/hosts
-shm              64M     0   64M   0% /dev/shm
-tmpfs           996M     0  996M   0% /proc/acpi
-tmpfs           996M     0  996M   0% /sys/firmware
