@@ -20,4 +20,7 @@ echo "Archiving ended"
 echo "Uploading and Deleting old files from Google Drive"
 python3 upload_google_drive.py $zipFile
 echo "Uploading and Deleting old files from Google Drive: SUCCESS"
+echo "Deleting local file $zipFile $sqlFile"
+rm -rf $zipFile $sqlFile
+echo "Deleting local file $zipFile $sqlFile: SUCCESS"
 
